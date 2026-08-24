@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
-    android:fillViewport="true">
+    android:baselineAligned="false"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:padding="@dimen/lock_pad">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:padding="@dimen/lock_pad">
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="@dimen/lock_gutter"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/brand"
@@ -26,10 +30,10 @@
             android:id="@+id/statusCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_card"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="18dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -42,7 +46,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:focusable="true"
+                    android:focusable="false"
                     android:paddingEnd="8dp"
                     android:text="@string/lock_title"
                     android:textColor="@color/text"
@@ -76,45 +80,60 @@
                 android:id="@+id/deviceId"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="8dp"
                 android:textColor="@color/muted"
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/qr"
-            android:layout_width="@dimen/qr_size"
-            android:layout_height="@dimen/qr_size"
-            android:layout_marginTop="24dp"
-            android:background="@drawable/bg_card"
-            android:contentDescription="pair qr"
-            android:padding="12dp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/pairCode"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:letterSpacing="0.18"
-            android:textColor="@color/accent"
-            android:textSize="@dimen/pair_code_size"
-            android:textStyle="bold"
-            android:visibility="gone" />
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/qr"
+                android:layout_width="@dimen/qr_size"
+                android:layout_height="@dimen/qr_size"
+                android:background="@drawable/bg_card"
+                android:contentDescription="pair qr"
+                android:padding="10dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/pairCode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:letterSpacing="0.16"
+                android:textColor="@color/accent"
+                android:textSize="@dimen/pair_code_size"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="@dimen/action_col_width"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <Button
             android:id="@+id/requestButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
             android:background="@drawable/btn_primary"
-            app:backgroundTint="@null"
+            android:defaultFocusHighlightEnabled="false"
             android:focusable="true"
+            android:focusedByDefault="true"
             android:minHeight="@dimen/btn_min_height"
+            android:nextFocusDown="@id/pinButton"
             android:text="@string/request_unlock"
             android:textAllCaps="false"
             android:textColor="@color/accent_on"
-            android:textSize="@dimen/body_size" />
+            android:textSize="@dimen/body_size"
+            app:backgroundTint="@null" />
 
         <Button
             android:id="@+id/pinButton"
@@ -122,13 +141,16 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:background="@drawable/btn_ghost"
-            app:backgroundTint="@null"
+            android:defaultFocusHighlightEnabled="false"
             android:focusable="true"
             android:minHeight="@dimen/btn_min_height"
+            android:nextFocusUp="@id/requestButton"
+            android:nextFocusDown="@id/refreshButton"
             android:text="@string/pin_unlock"
             android:textAllCaps="false"
             android:textColor="@color/text"
-            android:textSize="@dimen/body_size" />
+            android:textSize="@dimen/body_size"
+            app:backgroundTint="@null" />
 
         <Button
             android:id="@+id/refreshButton"
@@ -136,13 +158,16 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:background="@drawable/btn_ghost"
-            app:backgroundTint="@null"
+            android:defaultFocusHighlightEnabled="false"
             android:focusable="true"
             android:minHeight="@dimen/btn_min_height"
+            android:nextFocusUp="@id/pinButton"
+            android:nextFocusDown="@id/lockNowButton"
             android:text="@string/refresh_pair"
             android:textAllCaps="false"
             android:textColor="@color/text"
-            android:textSize="@dimen/body_size" />
+            android:textSize="@dimen/body_size"
+            app:backgroundTint="@null" />
 
         <Button
             android:id="@+id/lockNowButton"
@@ -150,13 +175,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:background="@drawable/btn_danger"
-            app:backgroundTint="@null"
+            android:defaultFocusHighlightEnabled="false"
             android:focusable="true"
             android:minHeight="@dimen/btn_min_height"
+            android:nextFocusUp="@id/refreshButton"
             android:text="@string/lock_now"
             android:textAllCaps="false"
             android:textColor="@color/danger"
             android:textSize="@dimen/body_size"
-            android:visibility="gone" />
+            android:visibility="gone"
+            app:backgroundTint="@null" />
     </LinearLayout>
-</ScrollView>
+</LinearLayout>

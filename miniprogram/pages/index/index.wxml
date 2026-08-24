@@ -1,37 +1,64 @@
-<view class="wrap">
+<view class="wrap index-wrap">
   <view wx:if="{{empty}}" class="card empty">
     <view class="empty-title">还没有设备</view>
-    <view class="empty-desc">打开被控设备上的 TV Lock，扫码或输入 6 位配对码。正式号需重新绑定一次。</view>
-    <view class="stack">
-      <view class="btn btn-primary" bindtap="goBind">扫码绑定</view>
-      <view wx:if="{{canSubscribe}}" class="btn btn-secondary" bindtap="subscribe">接收打开提醒</view>
-    </view>
+    <view class="empty-desc">打开被控设备上的 TV Lock，扫码或输入 6 位配对码。右下角可以绑定。</view>
   </view>
 
   <block wx:else>
-    <view class="kicker">点设备即可批准时长。到期会自动回锁。</view>
+    <view class="kicker">点卡片批准时长，到期自动回锁。</view>
     <view
       wx:for="{{devices}}"
       wx:key="deviceId"
-      class="card card-tap card-{{item.statusKind}}"
+      class="dev-card dev-card-{{item.statusKind}}"
       data-id="{{item.deviceId}}"
       bindtap="goApprove"
     >
-      <view class="device-top">
-        <view>
-          <view class="device-name">{{item.name}}</view>
-          <view class="device-meta">{{item.formText}} · {{item.shortId}}</view>
+      <view class="dev-top">
+        <view class="dev-mark">{{item.formText}}</view>
+        <view class="dev-info">
+          <view class="dev-name">{{item.name}}</view>
+          <view class="dev-meta">{{item.shortId}} · {{item.onlineText}}</view>
         </view>
-        <view class="pill pill-{{item.statusKind}}">{{item.statusText}}</view>
+        <view class="dev-side">
+          <view class="dev-pill pill-{{item.statusKind}}">{{item.statusText}}</view>
+          <view class="dev-pill dev-log" data-id="{{item.deviceId}}" catchtap="goLogs">记录</view>
+        </view>
       </view>
-      <view class="card-foot">
-        <view class="hint">{{item.actionHint}}</view>
-        <view class="link" data-id="{{item.deviceId}}" catchtap="goLogs">记录</view>
+      <view class="hw-specs" wx:if="{{item.hw}}">
+        <view class="hw-spec">
+          <text class="hw-spec-k">系统</text>
+          <text class="hw-spec-v">{{item.hw.os}}</text>
+        </view>
+        <view class="hw-spec">
+          <text class="hw-spec-k">屏幕</text>
+          <text class="hw-spec-v">{{item.hw.screen}}</text>
+        </view>
+        <view class="hw-spec">
+          <text class="hw-spec-k">运存</text>
+          <text class="hw-spec-v">{{item.hw.ram}}</text>
+        </view>
+        <view class="hw-spec">
+          <text class="hw-spec-k">存储</text>
+          <text class="hw-spec-v">{{item.hw.storage}}</text>
+        </view>
       </view>
-    </view>
-    <view class="stack">
-      <view class="btn btn-secondary" bindtap="goBind">绑定新设备</view>
-      <view wx:if="{{canSubscribe}}" class="btn btn-secondary" bindtap="subscribe">接收打开提醒</view>
+      <view class="hw-wait" wx:else>设备下次上线后显示规格</view>
     </view>
   </block>
+</view>
+
+<view wx:if="{{fabOpen}}" class="fab-mask" bindtap="closeFab"></view>
+<view class="fab">
+  <view class="fab-main {{fabOpen ? 'fab-main-on' : ''}}" bindtap="toggleFab">+</view>
+  <view
+    class="fab-item {{fabOpen ? 'fab-item-on' : ''}}"
+    style="transition-delay: {{fabOpen ? '40ms' : '0ms'}}"
+    bindtap="goBind"
+  >绑定新设备</view>
+  <view
+    wx:if="{{canSubscribe}}"
+    class="fab-item {{fabOpen ? 'fab-item-on' : ''}}"
+    style="transition-delay: {{fabOpen ? '90ms' : '0ms'}}"
+    bindtap="subscribe"
+  >接收打开提醒</view>
 </view>

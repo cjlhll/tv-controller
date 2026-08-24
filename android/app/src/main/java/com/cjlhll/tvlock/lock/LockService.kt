@@ -22,8 +22,10 @@ class LockService : Service() {
     private val io = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
     private val wakeReceiver = WakeReceiver()
+    private val homeReceiver = HomeCatchReceiver()
     private lateinit var client: CloudClient
     private var pollWake = false
+    private var shotFails = 0
 
     private val poller = object : Runnable {
         override fun run() {
@@ -39,6 +41,7 @@ class LockService : Service() {
         startForeground(NOTIF_ID, buildNotification("正在守护锁定状态"))
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_USER_PRESENT)
             addAction(Intent.ACTION_DREAMING_STOPPED)
             addAction(Intent.ACTION_DREAMING_STARTED)
@@ -49,7 +52,17 @@ class LockService : Service() {
             @Suppress("UnspecifiedRegisterReceiverFlag")
             registerReceiver(wakeReceiver, filter)
         }
+        val homeFilter = IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(homeReceiver, homeFilter, RECEIVER_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(homeReceiver, homeFilter)
+        }
         LockController.prepareLockTask(this)
+        if (TvLockApp.instance.prefs.setupDone && LockController.shouldShowLock(SessionBus.last)) {
+            LockController.setTvHomeEnabled(this, true)
+        }
         main.post(poller)
     }
 
@@ -65,6 +78,10 @@ class LockService : Service() {
         main.removeCallbacks(poller)
         try {
             unregisterReceiver(wakeReceiver)
+        } catch (_: Exception) {
+        }
+        try {
+            unregisterReceiver(homeReceiver)
         } catch (_: Exception) {
         }
         io.shutdownNow()
@@ -87,6 +104,7 @@ class LockService : Service() {
                 val res = if (shouldWake) client.wake() else client.state()
                 val snap = client.snapshotFrom(res) ?: return@execute
                 SessionBus.post(snap)
+                handleRemoteCommand(snap.pendingCommand)
                 val localExpired = snap.status == "unlocked" &&
                     snap.unlockUntil > 0 &&
                     snap.unlockUntil <= System.currentTimeMillis()
@@ -98,6 +116,7 @@ class LockService : Service() {
                     SessionBus.post(snap.copy(status = "locked", unlockUntil = 0))
                 }
                 main.post {
+                    LockController.hardenInstalledApp(this)
                     if (LockController.shouldShowLock(SessionBus.last)) {
                         LockController.launchLock(this)
                     }
@@ -110,6 +129,21 @@ class LockService : Service() {
                     }
                 }
             }
+        }
+    }
+
+    private fun handleRemoteCommand(command: String) {
+        if (command != "screenshot") {
+            shotFails = 0
+            return
+        }
+        if (DeviceCommands.captureAndUpload(client)) {
+            shotFails = 0
+            return
+        }
+        shotFails += 1
+        if (shotFails >= 2 && DeviceCommands.reportCaptureFailure(client)) {
+            shotFails = 0
         }
     }
 
@@ -153,7 +187,7 @@ class LockService : Service() {
         const val CHANNEL_ID = "tvlock"
         const val NOTIF_ID = 1001
         const val EXTRA_WAKE = "wake"
-        const val POLL_MS = 2000L
+        const val POLL_MS = 800L
 
         fun start(context: Context, reportWake: Boolean = false) {
             val i = Intent(context, LockService::class.java).putExtra(EXTRA_WAKE, reportWake)

@@ -7,6 +7,24 @@
       </view>
       <view class="pill pill-{{statusKind}}">{{statusText}}</view>
     </view>
+    <view class="hw-specs" wx:if="{{device.hw}}">
+      <view class="hw-spec">
+        <text class="hw-spec-k">系统</text>
+        <text class="hw-spec-v">{{device.hw.os}}</text>
+      </view>
+      <view class="hw-spec">
+        <text class="hw-spec-k">屏幕</text>
+        <text class="hw-spec-v">{{device.hw.screen}}</text>
+      </view>
+      <view class="hw-spec">
+        <text class="hw-spec-k">运存</text>
+        <text class="hw-spec-v">{{device.hw.ram}}</text>
+      </view>
+      <view class="hw-spec">
+        <text class="hw-spec-k">存储</text>
+        <text class="hw-spec-v">{{device.hw.storage}}</text>
+      </view>
+    </view>
   </view>
 
   <view class="section-label">{{isUnlocked ? '延长使用时间' : '选择使用时长'}}</view>
@@ -30,6 +48,21 @@
     <view class="btn btn-primary" bindtap="approveSelected">{{approveLabel}}</view>
     <view class="btn btn-danger" bindtap="reject">{{isUnlocked ? '立即回锁' : '拒绝并保持锁定'}}</view>
   </view>
+
+  <view class="section-label">远程操作</view>
+  <view class="row">
+    <view class="btn btn-secondary" bindtap="takeScreenshot">{{shotLoading ? '截图中…' : '获取截图'}}</view>
+    <view class="btn btn-danger" bindtap="lockDevice">远程锁屏</view>
+  </view>
+  <image
+    wx:if="{{shotPath}}"
+    class="shot"
+    src="{{shotPath}}"
+    mode="widthFix"
+    show-menu-by-longpress
+    binderror="onShotError"
+  />
+  <view wx:if="{{shotHint}}" class="hint shot-hint">{{shotHint}}</view>
 </view>
 <view class="wrap" wx:else>
   <view class="card empty">

@@ -14,6 +14,7 @@ if [[ ! -f "$APK" ]]; then
 fi
 
 "$ADB" install -r "$APK"
+"$ADB" shell pm grant com.cjlhll.tvlock android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1 || true
 echo "已安装。服务器默认 http://op.caojian.shop:8787/api"
 echo "Device Owner（专用机、需先移除账号）："
 echo "  $ADB shell dpm set-device-owner com.cjlhll.tvlock/.lock.LockAdminReceiver"

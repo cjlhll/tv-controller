@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog"
+    android:minWidth="420dp"
+    android:orientation="vertical"
+    android:padding="28dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/pin_dialog_title"
+        android:textColor="@color/text"
+        android:textSize="@dimen/title_size"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/pin_dialog_hint"
+        android:textColor="@color/muted"
+        android:textSize="@dimen/body_size" />
+
+    <EditText
+        android:id="@+id/pinInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_field"
+        android:focusable="true"
+        android:focusedByDefault="true"
+        android:gravity="center"
+        android:hint="••••"
+        android:imeOptions="actionDone"
+        android:inputType="numberPassword"
+        android:letterSpacing="0.3"
+        android:maxLength="6"
+        android:minHeight="@dimen/btn_min_height"
+        android:nextFocusDown="@id/pinConfirm"
+        android:padding="12dp"
+        android:textColor="@color/text"
+        android:textColorHint="@color/muted"
+        android:textSize="@dimen/pair_code_size" />
+
+    <TextView
+        android:id="@+id/pinError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/pin_error"
+        android:textColor="@color/danger"
+        android:textSize="@dimen/body_size"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/pinCancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/btn_ghost"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:nextFocusRight="@id/pinConfirm"
+            android:text="@string/pin_cancel"
+            android:textAllCaps="false"
+            android:textColor="@color/text"
+            android:textSize="@dimen/body_size"
+            app:backgroundTint="@null" />
+
+        <Button
+            android:id="@+id/pinConfirm"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/btn_primary"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:nextFocusLeft="@id/pinCancel"
+            android:text="@string/pin_confirm"
+            android:textAllCaps="false"
+            android:textColor="@color/accent_on"
+            android:textSize="@dimen/body_size"
+            app:backgroundTint="@null" />
+    </LinearLayout>
+</LinearLayout>

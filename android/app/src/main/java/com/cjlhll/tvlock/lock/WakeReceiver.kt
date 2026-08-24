@@ -6,12 +6,22 @@ import android.content.Intent
 
 class WakeReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        val action = intent?.action ?: return
-        if (action == Intent.ACTION_SCREEN_ON ||
-            action == Intent.ACTION_USER_PRESENT ||
-            action == Intent.ACTION_DREAMING_STOPPED
-        ) {
-            LockService.start(context, reportWake = true)
+        when (intent?.action) {
+            Intent.ACTION_SCREEN_OFF,
+            Intent.ACTION_DREAMING_STARTED,
+            -> {
+                DeviceCommands.rememberLockedFrame()
+                if (LockController.isTelevision(context)) {
+                    LockController.tvStandby = true
+                }
+            }
+            Intent.ACTION_SCREEN_ON,
+            Intent.ACTION_DREAMING_STOPPED,
+            Intent.ACTION_USER_PRESENT,
+            -> {
+                LockController.tvStandby = false
+                LockService.start(context, reportWake = true)
+            }
         }
     }
 }

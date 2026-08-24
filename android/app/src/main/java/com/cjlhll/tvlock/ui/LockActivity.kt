@@ -1,6 +1,7 @@
 package com.cjlhll.tvlock.ui
 
 import android.app.Dialog
+import android.app.role.RoleManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -32,15 +33,15 @@ class LockActivity : AppCompatActivity() {
     private var extraPairToken: String = ""
     private var extraPairExpireAt: Long = 0
     private var requesting = false
+    private var didFocusAction = false
 
     private val listener: (DeviceSnapshot) -> Unit = { snap ->
         render(snap)
         if (snap.isUnlocked) {
-            LockController.stopLockTaskSafe(this)
-            LockController.goHome(this)
+            LockController.applyUnlocked(this)
             finish()
         } else {
-            LockController.startLockTaskSafe(this)
+            LockController.applyLocked(this)
         }
     }
 
@@ -61,7 +62,10 @@ class LockActivity : AppCompatActivity() {
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
         }
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (!LockController.isTelevision(this)) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        overridePendingTransition(0, 0)
         binding = ActivityLockBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -72,32 +76,58 @@ class LockActivity : AppCompatActivity() {
         binding.refreshButton.setOnClickListener { refreshPair() }
         binding.lockNowButton.setOnClickListener { lockNow() }
         binding.title.setOnLongClickListener {
+            LockController.allowLeave = true
             startActivity(Intent(this, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_FORCE, true))
             true
         }
+        maybeAskHomeRole()
         SessionBus.last?.let { render(it) }
         if (SessionBus.last == null || SessionBus.last?.isUnbound == true) {
             refreshPair()
         }
+        focusPrimaryAction()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        overridePendingTransition(0, 0)
     }
 
     override fun onResume() {
         super.onResume()
         if (!::binding.isInitialized) return
+        LockController.allowLeave = false
+        LockController.lockForeground = true
+        LockController.lockActivity = this
         SessionBus.listen(listener)
         SessionBus.last?.let {
             if (it.isUnlocked) {
-                LockController.stopLockTaskSafe(this)
+                LockController.applyUnlocked(this)
                 finish()
             } else {
-                LockController.startLockTaskSafe(this)
+                LockController.applyLocked(this)
             }
+        }
+        focusPrimaryAction()
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (LockController.allowLeave) return
+        if (LockController.shouldShowLock(SessionBus.last)) {
+            LockController.launchLock(this, force = true)
         }
     }
 
     override fun onPause() {
+        LockController.lockForeground = false
         if (::binding.isInitialized) SessionBus.unlisten(listener)
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        if (LockController.lockActivity === this) LockController.lockActivity = null
+        super.onDestroy()
     }
 
     @Deprecated("Deprecated in Java")
@@ -108,6 +138,13 @@ class LockActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_POWER ||
+            keyCode == KeyEvent.KEYCODE_SLEEP ||
+            keyCode == KeyEvent.KEYCODE_SOFT_SLEEP ||
+            keyCode == KeyEvent.KEYCODE_TV_POWER
+        ) {
+            return super.onKeyDown(keyCode, event)
+        }
         if (keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_APP_SWITCH) {
             if (SessionBus.last?.isUnlocked != true) return true
         }
@@ -181,6 +218,35 @@ class LockActivity : AppCompatActivity() {
             extraPairExpireAt = 0
         }
         return extraPairToken
+    }
+
+    private fun maybeAskHomeRole() {
+        if (!LockController.isTelevision(this)) return
+        val prefs = TvLockApp.instance.prefs
+        if (prefs.homeRoleAsked || Build.VERSION.SDK_INT < 29) return
+        val rm = getSystemService(RoleManager::class.java) ?: return
+        if (!rm.isRoleAvailable(RoleManager.ROLE_HOME) || rm.isRoleHeld(RoleManager.ROLE_HOME)) return
+        prefs.homeRoleAsked = true
+        try {
+            startActivity(rm.createRequestRoleIntent(RoleManager.ROLE_HOME))
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun focusPrimaryAction() {
+        if (didFocusAction || !::binding.isInitialized) return
+        val target = when {
+            binding.requestButton.visibility == View.VISIBLE -> binding.requestButton
+            binding.lockNowButton.visibility == View.VISIBLE -> binding.lockNowButton
+            binding.refreshButton.visibility == View.VISIBLE -> binding.refreshButton
+            else -> return
+        }
+        target.post {
+            if (!didFocusAction && target.visibility == View.VISIBLE) {
+                target.requestFocus()
+                didFocusAction = true
+            }
+        }
     }
 
     private fun setBadge(text: String, background: Int, color: Int) {
@@ -277,8 +343,9 @@ class LockActivity : AppCompatActivity() {
     private fun askPin() {
         val dialog = Dialog(this, R.style.Theme_TvLock_Dialog)
         dialog.setContentView(R.layout.dialog_pin)
+        val dialogWidth = resources.getDimensionPixelSize(R.dimen.pin_dialog_width)
         dialog.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.86).toInt(),
+            if (dialogWidth > 0) dialogWidth else (resources.displayMetrics.widthPixels * 0.86).toInt(),
             ViewGroup.LayoutParams.WRAP_CONTENT,
         )
         val input = dialog.findViewById<EditText>(R.id.pinInput)

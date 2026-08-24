@@ -1,1 +1,168 @@
-/* page uses app.wxss */
+.index-wrap {
+  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+}
+
+.dev-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: #1e293b;
+  border: 2rpx solid #334155;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 28rpx;
+  box-sizing: border-box;
+}
+
+.dev-top {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.dev-card:active {
+  background: #243044;
+}
+
+.dev-card-unlocked {
+  border-color: #166534;
+  background: #172554;
+}
+
+.dev-card-unlocked:active {
+  background: #1e3a5f;
+}
+
+.dev-card-pending {
+  border-color: #a16207;
+}
+
+.dev-mark {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 22rpx;
+  background: #0f172a;
+  border: 2rpx solid #334155;
+  color: #cbd5e1;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 76rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.dev-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dev-name {
+  font-size: 38rpx;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #f8fafc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dev-meta {
+  margin-top: 8rpx;
+  color: #94a3b8;
+  font-size: 24rpx;
+}
+
+.dev-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10rpx;
+  flex-shrink: 0;
+}
+
+.dev-pill {
+  font-size: 22rpx;
+  line-height: 1;
+  padding: 10rpx 16rpx;
+  border-radius: 999rpx;
+}
+
+.dev-log {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.dev-log:active {
+  opacity: 0.8;
+}
+
+.hw-wait {
+  margin-top: 24rpx;
+  padding-top: 22rpx;
+  border-top: 2rpx solid #334155;
+  color: #64748b;
+  font-size: 24rpx;
+}
+
+.fab-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 30;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.fab {
+  position: fixed;
+  right: 36rpx;
+  bottom: calc(40rpx + env(safe-area-inset-bottom));
+  z-index: 31;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+}
+
+.fab-main {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: #d97706;
+  color: #fff7ed;
+  font-size: 64rpx;
+  line-height: 104rpx;
+  text-align: center;
+  font-weight: 300;
+  box-shadow: 0 16rpx 36rpx rgba(15, 23, 42, 0.45);
+  transition: transform 0.22s ease;
+}
+
+.fab-main-on {
+  transform: rotate(135deg);
+}
+
+.fab-item {
+  margin-bottom: 16rpx;
+  padding: 0 28rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  border-radius: 999rpx;
+  background: #1e293b;
+  border: 2rpx solid #475569;
+  color: #f1f5f9;
+  font-size: 26rpx;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(24rpx) rotate(-8deg);
+  transform-origin: right center;
+  transition: opacity 0.2s ease, transform 0.22s ease;
+  white-space: nowrap;
+}
+
+.fab-item-on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) rotate(0deg);
+}

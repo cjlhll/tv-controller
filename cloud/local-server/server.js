@@ -63,6 +63,41 @@ function fail(code, message) {
   return { ok: false, error: code, message }
 }
 
+function screenshotDir() {
+  const dir = path.join(path.dirname(DATA_FILE), 'screenshots')
+  fs.mkdirSync(dir, { recursive: true })
+  return dir
+}
+
+function screenshotPath(deviceId) {
+  return path.join(screenshotDir(), `${deviceId}.jpg`)
+}
+
+function saveScreenshot(deviceId, image) {
+  const raw = String(image || '').replace(/^data:image\/\w+;base64,/, '')
+  if (!raw) return { ok: false, error: 'EMPTY', message: '截图为空' }
+  let buf
+  try {
+    buf = Buffer.from(raw, 'base64')
+  } catch (e) {
+    return { ok: false, error: 'BAD_IMAGE', message: '截图格式无效' }
+  }
+  if (buf.length < 32 || buf.length > 4 * 1024 * 1024) {
+    return { ok: false, error: 'BAD_IMAGE', message: '截图大小不合法' }
+  }
+  fs.writeFileSync(screenshotPath(deviceId), buf)
+  return { ok: true }
+}
+
+function readScreenshot(deviceId) {
+  try {
+    const buf = fs.readFileSync(screenshotPath(deviceId))
+    return { image: buf.toString('base64'), mime: 'image/jpeg' }
+  } catch (e) {
+    return { image: '', mime: 'image/jpeg' }
+  }
+}
+
 function getDevice(db, deviceId) {
   return db.devices[deviceId] || null
 }
@@ -134,10 +169,36 @@ function handleDevice(db, action, payload) {
   }
   if (action === 'state' || action === 'heartbeat') {
     device.onlineAt = now
+    logic.applyHardware(device, payload)
     persistDevice(db, device)
-    return ok({ device: logic.publicDevice(device) })
+    return ok({ device: logic.publicDevice(device, now, { includeCommand: true }) })
+  }
+  if (action === 'ackCommand') {
+    logic.clearCommand(device)
+    persistDevice(db, device)
+    return ok({ device: logic.publicDevice(device, now, { includeCommand: true }) })
+  }
+  if (action === 'uploadScreenshot') {
+    if (payload.error && !payload.image) {
+      logic.markScreenshot(device, now, payload.error)
+      logic.clearCommand(device)
+      persistDevice(db, device)
+      return ok({
+        device: logic.publicDevice(device),
+        screenshotAt: device.screenshotAt,
+        screenshotError: device.screenshotError,
+      })
+    }
+    const saved = saveScreenshot(device.deviceId, payload.image)
+    if (!saved.ok) return fail(saved.error, saved.message)
+    logic.markScreenshot(device, now)
+    logic.clearCommand(device)
+    persistDevice(db, device)
+    addLog(db, { deviceId: device.deviceId, action: 'screenshot', createdAt: now })
+    return ok({ device: logic.publicDevice(device), screenshotAt: device.screenshotAt })
   }
   if (action === 'wake' || action === 'requestUnlock') {
+    logic.applyHardware(device, payload)
     const result =
       action === 'requestUnlock' ? logic.applyRequestUnlock(device, now) : logic.applyWake(device, now)
     persistDevice(db, result.device)
@@ -155,7 +216,7 @@ function handleDevice(db, action, payload) {
       action === 'requestUnlock' ? 'request' : 'wake'
     ).then((notify) =>
       ok({
-        device: logic.publicDevice(result.device),
+        device: logic.publicDevice(result.device, now, { includeCommand: true }),
         notify,
       })
     )
@@ -244,6 +305,29 @@ function handleUser(db, action, payload) {
     addLog(db, { deviceId: device.deviceId, action: 'reject', openid, createdAt: now })
     return ok({ device: logic.publicDevice(device) })
   }
+  if (action === 'remoteLock') {
+    logic.applyLock(device, now)
+    persistDevice(db, device)
+    addLog(db, { deviceId: device.deviceId, action: 'lock', openid, createdAt: now })
+    return ok({ device: logic.publicDevice(device) })
+  }
+  if (action === 'requestScreenshot') {
+    const result = logic.applyCommand(device, 'screenshot', now)
+    if (result.error) return fail(result.error, result.message)
+    persistDevice(db, result.device)
+    addLog(db, { deviceId: device.deviceId, action: 'screenshot', openid, createdAt: now })
+    return ok({ device: logic.publicDevice(result.device), command: 'screenshot' })
+  }
+  if (action === 'getScreenshot') {
+    const shot = readScreenshot(device.deviceId)
+    return ok({
+      device: logic.publicDevice(device),
+      screenshotAt: device.screenshotAt || 0,
+      screenshotError: device.screenshotError || '',
+      image: device.screenshotError ? '' : shot.image,
+      mime: shot.mime,
+    })
+  }
   return fail('UNKNOWN_ACTION', `未知用户动作: ${action}`)
 }
 
@@ -265,8 +349,20 @@ function dispatch(db, payload) {
     'pinUnlock',
     'lock',
     'requestUnlock',
+    'ackCommand',
+    'uploadScreenshot',
   ])
-  const userActions = new Set(['bind', 'myDevices', 'approve', 'reject', 'logs', 'setDeviceName'])
+  const userActions = new Set([
+    'bind',
+    'myDevices',
+    'approve',
+    'reject',
+    'logs',
+    'setDeviceName',
+    'remoteLock',
+    'requestScreenshot',
+    'getScreenshot',
+  ])
   if (deviceActions.has(action)) return handleDevice(db, action, payload)
   if (userActions.has(action)) return handleUser(db, action, payload)
   return fail('UNKNOWN_ACTION', `未知动作: ${action}`)
@@ -282,8 +378,11 @@ function adminPage() {
   <style>
     body { font-family: sans-serif; background:#0B1220; color:#F4F7FB; margin:0; padding:24px; }
     h1 { font-size:20px; }
-    .card { background:#152033; border-radius:12px; padding:16px; margin:12px 0; }
+    .card { background:#152033; border-radius:16px; padding:20px; margin:14px 0; }
     .muted { color:#8B9BB4; font-size:13px; }
+    .specs { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin:12px 0 8px; }
+    .spec kbd { display:block; color:#8B9BB4; font:12px sans-serif; margin-bottom:2px; }
+    .spec span { color:#E8EEF7; font-size:15px; }
     button { background:#F5A623; border:0; border-radius:8px; padding:8px 12px; margin:4px; color:#111; font-weight:600; }
     button.ghost { background:#2A3A55; color:#F4F7FB; }
     input { padding:8px; border-radius:8px; border:0; }
@@ -327,7 +426,13 @@ function adminPage() {
       el.innerHTML = r.devices.map(d => \`
         <div class="card">
           <div><b>\${d.name}</b> · \${d.status} \${remain(d.unlockUntil)}</div>
-          <div class="muted">\${d.deviceId}</div>
+          <div class="muted">\${d.deviceId}\${d.hw && d.hw.model ? ' · ' + d.hw.model : ''}</div>
+          \${d.hw ? '<div class="specs">'
+            + '<div class="spec"><kbd>系统</kbd><span>' + (d.hw.os || '-') + '</span></div>'
+            + '<div class="spec"><kbd>屏幕</kbd><span>' + (d.hw.screen || '-') + '</span></div>'
+            + '<div class="spec"><kbd>运存</kbd><span>' + (d.hw.ram || '-') + '</span></div>'
+            + '<div class="spec"><kbd>存储</kbd><span>' + (d.hw.storage || '-') + '</span></div>'
+            + '</div>' : '<p class="muted">等待设备上报规格</p>'}
           <button onclick="act('\${d.deviceId}','approve',15)">15分钟</button>
           <button onclick="act('\${d.deviceId}','approve',30)">30分钟</button>
           <button onclick="act('\${d.deviceId}','approve',60)">1小时</button>

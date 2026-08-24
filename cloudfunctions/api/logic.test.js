@@ -4,10 +4,36 @@ const assert = require('assert')
 const logic = require('./logic')
 
 const now = 1_700_000_000_000
-const device = logic.applyRegister(null, { name: '测试机', form: 'phone' }, now)
+const device = logic.applyRegister(null, {
+  name: '测试机',
+  form: 'phone',
+  hw: { os: 'Android 12', model: 'M6 Note', screen: '1080×1920', ram: '4.0 GB', storage: '12 / 32 GB' },
+}, now)
 assert.ok(device.deviceId)
 assert.equal(device.status, 'unbound')
 assert.ok(device.pairToken)
+assert.equal(device.hw.os, 'Android 12')
+assert.equal(logic.publicDevice(device, now).hw.screen, '1080×1920')
+logic.applyHardware(device, {})
+assert.equal(device.hw.ram, '4.0 GB')
+logic.applyHardware(device, { hw: { os: 'Android 14', ram: '8.0 GB', screen: '1080×2400', storage: '40 / 128 GB' } })
+assert.equal(device.hw.os, 'Android 14')
+assert.equal(device.hw.ram, '8.0 GB')
+assert.equal(device.hw.model, '')
+assert.equal(device.name, '测试机')
+
+const tv = logic.applyRegister(null, {
+  name: 'BRAVIA 4K VH2',
+  form: 'tv',
+  hw: { model: 'BRAVIA 4K VH2' },
+}, now)
+assert.equal(tv.name, 'BRAVIA 4K VH2')
+logic.applyHardware(tv, { hw: { model: 'SONY XR-65X91J', os: 'Android 12' } })
+assert.equal(tv.name, 'SONY XR-65X91J')
+assert.equal(tv.hw.model, 'SONY XR-65X91J')
+tv.name = '客厅电视'
+logic.applyHardware(tv, { hw: { model: 'SONY XR-65X91K', os: 'Android 12' } })
+assert.equal(tv.name, '客厅电视')
 
 const bind = logic.applyBind(device, now)
 assert.ok(!bind.error)
@@ -51,5 +77,20 @@ logic.applyRefreshPair(device, now + 5000)
 const pub = logic.publicDevice(device, now + 5000)
 assert.ok(pub.pairToken)
 assert.ok(pub.pairTokenExpireAt > now + 5000)
+
+const cmd = logic.applyCommand(device, 'screenshot', now + 6000)
+assert.ok(!cmd.error)
+assert.equal(logic.effectiveCommand(device, now + 6000), 'screenshot')
+assert.equal(logic.publicDevice(device, now + 6000, { includeCommand: true }).pendingCommand, 'screenshot')
+assert.equal(logic.publicDevice(device, now + 6000).pendingCommand, undefined)
+logic.clearCommand(device)
+assert.equal(logic.effectiveCommand(device, now + 6000), '')
+logic.markScreenshot(device, now + 8000, '设备已待机，亮屏后再截')
+assert.equal(device.screenshotError, '设备已待机，亮屏后再截')
+assert.equal(logic.publicDevice(device, now + 8000).screenshotError, '设备已待机，亮屏后再截')
+logic.markScreenshot(device, now + 9000)
+assert.equal(device.screenshotError, '')
+const bad = logic.applyCommand(device, 'wipe', now + 7000)
+assert.equal(bad.error, 'BAD_COMMAND')
 
 console.log('logic.test.js ok')

@@ -58,8 +58,8 @@ Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLoc
 
 | 调用方 | action | 鉴权 |
 |---|---|---|
-| 设备 | `register` `refreshPair` `wake` `state` `heartbeat` `pinUnlock` `lock` `requestUnlock` | `deviceId` + `deviceSecret`（`register` 可首次不带） |
-| 家长 | `login` `bind` `myDevices` `approve` `reject` `logs` `setDeviceName` | 小程序 `wx.login` → `login` 换真实 openid；本机审批页用 `local-parent` |
+| 设备 | `register` `refreshPair` `wake` `state` `heartbeat` `pinUnlock` `lock` `requestUnlock` `ackCommand` `uploadScreenshot` | `deviceId` + `deviceSecret`（`register` 可首次不带） |
+| 家长 | `login` `bind` `myDevices` `approve` `reject` `logs` `setDeviceName` `remoteLock` `requestScreenshot` `getScreenshot` | 小程序 `wx.login` → `login` 换真实 openid；本机审批页用 `local-parent` |
 
 `bind` 需要 `pairToken`。`approve` 需要 `deviceId` + `durationMin`。
 
@@ -168,8 +168,8 @@ curl -sS -X POST http://op.caojian.shop:8787/api \
 2. **不要用 WSL UNC 当开发者工具工程根。** 文件变更经常不进编译包，界面还是旧 JS。
 3. **`urlCheck: false` 不够。** 测试号 `RequestDomain` 为空时，模拟器仍报 `request:fail url not in domain list`。需要详情勾选「不校验合法域名」，或把 `http://127.0.0.1` / `http://localhost` / 带端口的写入该工程的 DevTools `runtimeAttr.network.RequestDomain`（`%LOCALAPPDATA%\微信开发者工具\User Data\...\WeappLocalData\localstorage_*.json`，`projectpath` 对得上的那份）。
 4. **APK 明文 HTTP：** Device Owner 下 OkHttp 会 `CLEARTEXT communication not permitted`，必须走套接字回退。
-5. **不要把 Magisk 保活写进正式逻辑。** 索尼二期没有 root。
-6. **`TvHomeAlias` 默认关闭。** 打开会替换手机桌面。
+5. **不要把 Magisk / `su` / root 写进正式逻辑。** 索尼没有 root，测试机的 root 也不要用。截图对齐 atvTools：走系统合成器（无障碍 `takeScreenshot`），失败立刻回传原因，不要空转等到超时。
+6. **`LauncherAlias` 完成设置后关闭。** 桌面不再出现 TV Lock 图标。Device Owner 下 `setUninstallBlocked` 禁止卸载。`TvHomeAlias` 仅电视锁定时打开。
 7. **卸载 Device Owner：** `adb.exe shell dpm remove-active-admin com.cjlhll.tvlock/.lock.LockAdminReceiver`。同包名重装会保留 Owner。
 
 ---
@@ -188,6 +188,6 @@ curl -sS -X POST http://op.caojian.shop:8787/api \
 
 ## 8. 二期（未在索尼实机验证）
 
-同一 APK：`LEANBACK_LAUNCHER`、电视字号、`DREAMING_STOPPED`。电视用 `adb connect <IP>`。Device Owner 若已登录 Google，要先去账号。唤醒路径必须在索尼上重测，手机通过 ≠ 电视通过。
+同一 APK：`LEANBACK_LAUNCHER`、电视字号、`DREAMING_STOPPED`。电视用 `adb connect <IP>`。Device Owner 若已登录 Google，要先去账号。遥控器电源键一下是待机不是关机：进待机听 `SCREEN_OFF` / `DREAMING_STARTED`，醒来听 `SCREEN_ON` / `DREAMING_STOPPED`。电视锁屏不要 `KEEP_SCREEN_ON`，待机时不要再 `launchLock`。没有应用可发的待机广播。唤醒路径必须在索尼上重测，手机通过 ≠ 电视通过。
 
 正式发布路径：正式小程序 AppID → 开通云开发 → 上传 `cloudfunctions/api` → 集合 `devices` `bindings` `logs` → 一次性订阅消息 → 云函数 HTTP 地址填进 APK → 小程序改回 `callFunction`。

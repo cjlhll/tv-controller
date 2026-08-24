@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="title_size">34sp</dimen>
-    <dimen name="body_size">18sp</dimen>
-    <dimen name="qr_size">200dp</dimen>
+    <dimen name="title_size">26sp</dimen>
+    <dimen name="body_size">16sp</dimen>
+    <dimen name="btn_min_height">56dp</dimen>
+    <dimen name="qr_size">168dp</dimen>
+    <dimen name="lock_pad">20dp</dimen>
+    <dimen name="lock_gutter">24dp</dimen>
+    <dimen name="action_col_width">300dp</dimen>
+    <dimen name="pair_code_size">32sp</dimen>
+    <dimen name="brand_size">13sp</dimen>
+    <dimen name="pin_dialog_width">420dp</dimen>
 </resources>

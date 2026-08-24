@@ -11,6 +11,8 @@ data class DeviceSnapshot(
     val boundCount: Int,
     val pairToken: String = "",
     val pairTokenExpireAt: Long = 0,
+    val pendingCommand: String = "",
+    val screenshotAt: Long = 0,
 ) {
     val isUnlocked: Boolean
         get() = status == "unlocked" && unlockUntil > System.currentTimeMillis()
@@ -31,6 +33,8 @@ data class DeviceSnapshot(
                 boundCount = device.optInt("boundCount"),
                 pairToken = obj.optString("pairToken", device.optString("pairToken")),
                 pairTokenExpireAt = obj.optLong("pairTokenExpireAt", device.optLong("pairTokenExpireAt")),
+                pendingCommand = obj.optString("pendingCommand", device.optString("pendingCommand")),
+                screenshotAt = obj.optLong("screenshotAt", device.optLong("screenshotAt")),
             )
         }
     }

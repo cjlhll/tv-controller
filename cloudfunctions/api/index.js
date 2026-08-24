@@ -164,11 +164,19 @@ async function handleDevice(action, payload) {
 
   if (action === 'state' || action === 'heartbeat') {
     device.onlineAt = now
+    logic.applyHardware(device, payload)
     await saveDevice(device)
-    return ok({ device: logic.publicDevice(device) })
+    return ok({ device: logic.publicDevice(device, now, { includeCommand: true }) })
+  }
+
+  if (action === 'ackCommand') {
+    logic.clearCommand(device)
+    await saveDevice(device)
+    return ok({ device: logic.publicDevice(device, now, { includeCommand: true }) })
   }
 
   if (action === 'wake' || action === 'requestUnlock') {
+    logic.applyHardware(device, payload)
     const result =
       action === 'requestUnlock' ? logic.applyRequestUnlock(device, now) : logic.applyWake(device, now)
     await saveDevice(result.device)
@@ -258,7 +266,15 @@ async function handleUser(action, payload, openid) {
     return ok({ devices })
   }
 
-  if (action === 'approve' || action === 'reject' || action === 'logs' || action === 'setDeviceName') {
+  if (
+    action === 'approve' ||
+    action === 'reject' ||
+    action === 'logs' ||
+    action === 'setDeviceName' ||
+    action === 'remoteLock' ||
+    action === 'requestScreenshot' ||
+    action === 'getScreenshot'
+  ) {
     const device = await getDeviceById(payload.deviceId)
     if (!device) return fail('NOT_FOUND', '设备不存在')
     const bound = await findBinding(openid, device.deviceId)
@@ -294,6 +310,32 @@ async function handleUser(action, payload, openid) {
       return ok({ device: logic.publicDevice(unlocked), minutes })
     }
 
+    if (action === 'remoteLock') {
+      logic.applyLock(device, now)
+      await saveDevice(device)
+      await addLog({ deviceId: device.deviceId, action: 'lock', openid, createdAt: now })
+      return ok({ device: logic.publicDevice(device) })
+    }
+
+    if (action === 'requestScreenshot') {
+      const result = logic.applyCommand(device, 'screenshot', now)
+      if (result.error) return fail(result.error, result.message)
+      await saveDevice(result.device)
+      await addLog({ deviceId: device.deviceId, action: 'screenshot', openid, createdAt: now })
+      return ok({ device: logic.publicDevice(result.device), command: 'screenshot' })
+    }
+
+    if (action === 'getScreenshot') {
+      return ok({
+        device: logic.publicDevice(device),
+        screenshotAt: device.screenshotAt || 0,
+        screenshotError: device.screenshotError || '',
+        image: '',
+        mime: 'image/jpeg',
+        message: '截图文件仅自建 API 支持',
+      })
+    }
+
     logic.applyReject(device, now)
     await saveDevice(device)
     await addLog({ deviceId: device.deviceId, action: 'reject', openid, createdAt: now })
@@ -312,8 +354,19 @@ const DEVICE_ACTIONS = new Set([
   'pinUnlock',
   'lock',
   'requestUnlock',
+  'ackCommand',
 ])
-const USER_ACTIONS = new Set(['bind', 'myDevices', 'approve', 'reject', 'logs', 'setDeviceName'])
+const USER_ACTIONS = new Set([
+  'bind',
+  'myDevices',
+  'approve',
+  'reject',
+  'logs',
+  'setDeviceName',
+  'remoteLock',
+  'requestScreenshot',
+  'getScreenshot',
+])
 
 exports.main = async (event) => {
   const payload = normalizeEvent(event)

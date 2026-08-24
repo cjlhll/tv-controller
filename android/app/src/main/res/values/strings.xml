@@ -18,4 +18,5 @@
     <string name="pin_confirm">解锁 30 分钟</string>
     <string name="pin_cancel">取消</string>
     <string name="pin_error">PIN 不正确</string>
+    <string name="shot_service_desc">用于家长远程查看当前屏幕，不会读取输入内容</string>
 </resources>

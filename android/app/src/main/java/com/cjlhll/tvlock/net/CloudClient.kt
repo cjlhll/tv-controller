@@ -4,6 +4,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import com.cjlhll.tvlock.TvLockApp
 import com.cjlhll.tvlock.data.AppPrefs
+import com.cjlhll.tvlock.data.DeviceInfo
 import com.cjlhll.tvlock.data.DeviceSnapshot
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -20,9 +21,15 @@ class CloudClient(private val prefs: AppPrefs) {
         .build()
 
     fun register(): JSONObject {
+        val ctx = TvLockApp.instance
+        val marketing = DeviceInfo.marketingName(ctx)
+        if (prefs.deviceName.isBlank() || prefs.deviceName == Build.MODEL) {
+            prefs.deviceName = marketing
+        }
         val extra = JSONObject()
             .put("name", prefs.deviceName)
             .put("form", detectForm())
+            .put("hw", DeviceInfo.toJson(ctx))
         if (prefs.deviceId.isNotEmpty() && prefs.deviceSecret.isNotEmpty()) {
             extra.put("deviceId", prefs.deviceId)
             extra.put("deviceSecret", prefs.deviceSecret)
@@ -37,9 +44,9 @@ class CloudClient(private val prefs: AppPrefs) {
 
     fun refreshPair(): JSONObject = post("refreshPair")
 
-    fun state(): JSONObject = post("state")
+    fun state(): JSONObject = post("state", JSONObject().put("hw", DeviceInfo.toJson(TvLockApp.instance)))
 
-    fun wake(): JSONObject = post("wake")
+    fun wake(): JSONObject = post("wake", JSONObject().put("hw", DeviceInfo.toJson(TvLockApp.instance)))
 
     fun requestUnlock(): JSONObject = post("requestUnlock")
 
@@ -48,9 +55,28 @@ class CloudClient(private val prefs: AppPrefs) {
 
     fun lock(): JSONObject = post("lock")
 
+    fun ackCommand(): JSONObject = post("ackCommand")
+
+    fun uploadScreenshot(jpeg: ByteArray): JSONObject {
+        val image = android.util.Base64.encodeToString(jpeg, android.util.Base64.NO_WRAP)
+        return post(
+            "uploadScreenshot",
+            JSONObject().put("image", image),
+            timeoutMs = 20000,
+        )
+    }
+
+    fun uploadScreenshotError(message: String): JSONObject =
+        post("uploadScreenshot", JSONObject().put("error", message), timeoutMs = 8000)
+
     fun snapshotFrom(res: JSONObject): DeviceSnapshot? = DeviceSnapshot.from(res)
 
-    private fun post(action: String, extra: JSONObject = JSONObject(), includeAuth: Boolean = true): JSONObject {
+    private fun post(
+        action: String,
+        extra: JSONObject = JSONObject(),
+        includeAuth: Boolean = true,
+        timeoutMs: Int = 8000,
+    ): JSONObject {
         val body = extra
         body.put("action", action)
         if (includeAuth && prefs.deviceId.isNotEmpty()) {
@@ -66,7 +92,7 @@ class CloudClient(private val prefs: AppPrefs) {
                 resp.body?.string().orEmpty()
             }
         } else {
-            rawHttpPost(prefs.serverUrl, body.toString())
+            rawHttpPost(prefs.serverUrl, body.toString(), timeoutMs)
         }
         if (text.isEmpty()) {
             return JSONObject().put("ok", false).put("message", "empty response")
@@ -74,14 +100,14 @@ class CloudClient(private val prefs: AppPrefs) {
         return JSONObject(text)
     }
 
-    private fun rawHttpPost(url: String, json: String): String {
+    private fun rawHttpPost(url: String, json: String, timeoutMs: Int = 8000): String {
         val u = java.net.URL(url)
         val port = if (u.port > 0) u.port else 80
         val path = if (u.path.isNullOrEmpty()) "/" else u.path
         val payload = json.toByteArray(Charsets.UTF_8)
         java.net.Socket().use { socket ->
-            socket.connect(java.net.InetSocketAddress(u.host, port), 8000)
-            socket.soTimeout = 8000
+            socket.connect(java.net.InetSocketAddress(u.host, port), timeoutMs)
+            socket.soTimeout = timeoutMs
             val out = socket.getOutputStream()
             val header = buildString {
                 append("POST $path HTTP/1.1\r\n")

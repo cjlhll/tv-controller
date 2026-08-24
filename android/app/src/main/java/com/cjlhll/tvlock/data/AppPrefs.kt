@@ -37,6 +37,10 @@ class AppPrefs(context: Context) {
         get() = sp.getBoolean("setupDone", false)
         set(value) { sp.edit().putBoolean("setupDone", value).apply() }
 
+    var homeRoleAsked: Boolean
+        get() = sp.getBoolean("homeRoleAsked", false)
+        set(value) { sp.edit().putBoolean("homeRoleAsked", value).apply() }
+
     val pinSalt: String
         get() {
             val existing = sp.getString("pinSalt", "")

@@ -100,6 +100,7 @@ class SetupActivity : AppCompatActivity() {
                         return@runOnUiThread
                     }
                     prefs.setupDone = true
+                    LockController.hardenInstalledApp(this)
                     LockService.start(this)
                     goLock()
                 }
