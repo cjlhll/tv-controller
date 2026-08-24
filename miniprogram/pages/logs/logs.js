@@ -35,5 +35,5 @@ Page({
 function format(ts) {
   const d = new Date(ts)
   const p = (n) => (n < 10 ? '0' + n : '' + n)
-  return `${d.getMonth() + 1}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+  return `${d.getMonth() + 1}月${p(d.getDate())}日 ${p(d.getHours())}:${p(d.getMinutes())}`
 }

@@ -41,15 +41,17 @@ Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLoc
 微信小程序 --wx.request 或 callFunction-->  同一套 action
 ```
 
-**现在（一期联调）不走云开发。** 当前开发者工具用的是「接口测试号」`wx7d3b9c23e55f5c53`，微信返回「测试号不能使用云服务」。小程序只请求本机 API。
+**现在（一期联调）不走云开发。** 当前开发者工具用的是「接口测试号」`wx7d3b9c23e55f5c53`，微信返回「测试号不能使用云服务」。小程序只请求自建 API。
 
-### 本机 API
+### 自建 API（Docker @ 192.168.1.2）
 
-- 进程：`node cloud/local-server/server.js`（WSL，监听 `0.0.0.0:8787`）
-- 设备/小程序：`POST http://127.0.0.1:8787/api`
-- 浏览器审批页：http://127.0.0.1:8787/
-- 持久化：`cloud/local-server/data.json`（服务每个请求读写，可直接改文件再调 API）
-- 状态机实现：[`cloudfunctions/api/logic.js`](cloudfunctions/api/logic.js)（云函数与本机共用）
+- 公网：`POST http://op.caojian.shop:8787/api`（路由器已转发到内网 `192.168.1.2:8787`）
+- 审批页：http://op.caojian.shop:8787/
+- 健康检查：http://op.caojian.shop:8787/health
+- 容器：`tvlock-api`，数据卷 `/opt/tvlock/data/data.json`
+- 部署：本机已 SSH 免密到 `root@192.168.1.2` 后执行 `./scripts/deploy-api.sh`
+- 本机调试仍可用：`node cloud/local-server/server.js`（监听 `0.0.0.0:8787`）
+- 状态机实现：[`cloudfunctions/api/logic.js`](cloudfunctions/api/logic.js)（云函数与自建 API 共用）
 - 云函数入口：[`cloudfunctions/api/index.js`](cloudfunctions/api/index.js)（正式 AppID 开通云开发后再上传）
 
 `POST /api` JSON 必有 `action`：
@@ -85,7 +87,7 @@ Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLoc
 
 `http://` 不用 OkHttp（Device Owner / 系统策略会报 CLEARTEXT），走 `CloudClient.rawHttpPost`。`https://`（以后云开发 HTTP）仍走 OkHttp。
 
-默认服务器 `http://127.0.0.1:8787/api`，靠 `adb reverse tcp:8787 tcp:8787`。
+默认服务器 `http://op.caojian.shop:8787/api`。家里靠 OpenWrt「自定义映射域名」把该域名指到 `192.168.1.2`。不要再填 `127.0.0.1` 或内网 IP，也不要 `adb reverse`。已装过的测试机若还是旧地址，长按锁屏标题改，或重装（会自动把旧本机地址迁到域名）。
 
 ---
 
@@ -128,8 +130,7 @@ Cursor / 编译 APK / 本机 API：在 **WSL Debian**。
 
 - ADB：`/mnt/c/adb/platform-tools/adb.exe`。不要用 WSL 里的 `adb`（看不到 Windows USB）。
 - 当前设备：`721QACREKPMRU`，model `M6 Note`。
-- 每次重插 USB 后：`adb.exe reverse tcp:8787 tcp:8787`。
-- 本机 8787：Windows `127.0.0.1:8787` 已能转到 WSL（已验证）。先起 `node cloud/local-server/server.js` 再装/开 APK。
+- 不要再做 `adb reverse`。手机和小程序都打 `http://op.caojian.shop:8787/api`。
 - 编 APK：`org.gradle.java.home=/home/cjlhll/.local/jdk-17`（系统 OpenJDK 21 没有 `jlink`）。SDK：`android/local.properties` → `/home/cjlhll/Android/Sdk`。
 - 微信 CLI：`C:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat`，IDE HTTP `127.0.0.1:10555`。CLI 不认 `\\wsl$\` 工程路径，要对 `C:\Users\caoji\tv-controller`。
 - 自动化：`cli auto --project C:\Users\caoji\tv-controller --auto-port 9420`。从 WSL 连 `ws://172.18.192.1:9420`（Windows 在 `::` 上听 9420）。`miniprogram-automator` 的 `checkVersion` 在此 IDE 版本上会炸，需跳过。
@@ -140,16 +141,16 @@ Cursor / 编译 APK / 本机 API：在 **WSL Debian**。
 
 ## 5. 日常联调顺序
 
-1. WSL：`node cloud/local-server/server.js`（保持开着）。
-2. `adb.exe devices` 有手机 → `adb.exe reverse tcp:8787 tcp:8787`。
+1. 确认 `http://op.caojian.shop:8787/health` 返回 `{"ok":true}`。本机改 API 后跑 `./scripts/deploy-api.sh`。
+2. `adb.exe devices` 有手机。不要 `adb reverse`。
 3. 需要装新包：`cd android && ./gradlew :app:assembleDebug`，再 `./scripts/install-phone.sh`。
-4. 改小程序：先改 WSL，再 rsync 到 `C:\Users\caoji\tv-controller`，用开发者工具打开 **Windows 目录**，编译一次。
+4. 改小程序：先改 WSL，再 rsync 到 `C:\Users\caoji\tv-controller`，用开发者工具打开 **Windows 目录**，编译一次。详情勾选「不校验合法域名」，并把 `http://op.caojian.shop` 写入 RequestDomain。
 5. 模拟器首页应能看到「M6 Note」。批准时长后手机应回桌面；到期或 `action:lock` 后回锁屏。
 
-没有小程序时，用 http://127.0.0.1:8787/ 或 curl 批准。
+没有小程序时，用 http://op.caojian.shop:8787/ 或 curl 批准。
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8787/api \
+curl -sS -X POST http://op.caojian.shop:8787/api \
   -H 'Content-Type: application/json' \
   -d '{"action":"approve","deviceId":"edbcef7b8488db6c","durationMin":15,"openid":"mp-dev"}'
 ```

@@ -5,8 +5,12 @@ Page({
   data: {
     devices: [],
     empty: true,
+    canSubscribe: false,
   },
   onShow() {
+    this.setData({
+      canSubscribe: !!(env.subscribeTemplateId && !env.subscribeTemplateId.startsWith('YOUR_')),
+    })
     this.refresh()
   },
   onPullDownRefresh() {
@@ -16,10 +20,17 @@ Page({
     return api
       .call('myDevices')
       .then((res) => {
-        const devices = (res.devices || []).map((d) => ({
-          ...d,
-          statusText: api.statusText(d),
-        }))
+        const devices = (res.devices || []).map((d) => {
+          const statusKind = api.statusKind(d, res.now)
+          return {
+            ...d,
+            statusKind,
+            statusText: api.statusText(d, res.now),
+            formText: api.formText(d.form),
+            shortId: api.shortId(d.deviceId),
+            actionHint: statusKind === 'pending' ? '等待批准' : statusKind === 'unlocked' ? '点按可续时或回锁' : '点按批准解锁',
+          }
+        })
         this.setData({ devices, empty: devices.length === 0 })
       })
       .catch((err) => {
@@ -44,7 +55,7 @@ Page({
     }
     wx.requestSubscribeMessage({
       tmplIds: [env.subscribeTemplateId],
-      complete: () => {
+      complete() {
         wx.showToast({ title: '已处理订阅', icon: 'none' })
       },
     })

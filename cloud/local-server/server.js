@@ -6,7 +6,7 @@ const path = require('path')
 const logic = require('../../cloudfunctions/api/logic')
 
 const PORT = Number(process.env.PORT || 8787)
-const DATA_FILE = path.join(__dirname, 'data.json')
+const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data.json')
 
 function loadDb() {
   try {
@@ -55,7 +55,7 @@ function readBody(req) {
 }
 
 function ok(data) {
-  return { ok: true, ...data }
+  return { ok: true, now: logic.nowMs(), ...data }
 }
 
 function fail(code, message) {
@@ -206,7 +206,7 @@ function handleUser(db, action, payload) {
       durationMin: minutes,
       createdAt: now,
     })
-    return ok({ device: logic.publicDevice(unlocked) })
+    return ok({ device: logic.publicDevice(unlocked), minutes })
   }
   if (action === 'reject') {
     logic.applyReject(device, now)
@@ -280,7 +280,8 @@ function adminPage() {
     function remain(u) {
       const ms = (u||0) - Date.now()
       if (ms <= 0) return ''
-      return '剩余 ' + Math.ceil(ms/60000) + ' 分钟'
+      const n = Math.floor(ms / 60000)
+      return '剩余 ' + (n > 0 ? n : 1) + ' 分钟'
     }
     async function load() {
       const r = await api({ action:'myDevices', openid:'local-parent' })
@@ -341,6 +342,6 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`TV Lock local API http://127.0.0.1:${PORT}`)
-  console.log(`Admin UI          http://127.0.0.1:${PORT}/`)
+  console.log(`TV Lock API  http://0.0.0.0:${PORT}`)
+  console.log(`Admin UI     http://0.0.0.0:${PORT}/`)
 })

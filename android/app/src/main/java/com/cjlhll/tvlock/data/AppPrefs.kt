@@ -9,8 +9,17 @@ class AppPrefs(context: Context) {
     private val sp = context.getSharedPreferences("tvlock", Context.MODE_PRIVATE)
 
     var serverUrl: String
-        get() = sp.getString("serverUrl", DEFAULT_SERVER) ?: DEFAULT_SERVER
-        set(value) { sp.edit().putString("serverUrl", value.trim()).apply() }
+        get() {
+            val raw = (sp.getString("serverUrl", DEFAULT_SERVER) ?: DEFAULT_SERVER).trim()
+            val migrated = canonicalizeServerUrl(raw)
+            if (migrated != raw) {
+                sp.edit().putString("serverUrl", migrated).apply()
+            }
+            return migrated
+        }
+        set(value) {
+            sp.edit().putString("serverUrl", canonicalizeServerUrl(value.trim())).apply()
+        }
 
     var deviceId: String
         get() = sp.getString("deviceId", "") ?: ""
@@ -50,7 +59,15 @@ class AppPrefs(context: Context) {
     }
 
     companion object {
-        const val DEFAULT_SERVER = "http://127.0.0.1:8787/api"
+        const val DEFAULT_SERVER = "http://op.caojian.shop:8787/api"
+
+        fun canonicalizeServerUrl(url: String): String {
+            if (url.isEmpty()) return DEFAULT_SERVER
+            if (url.contains("127.0.0.1") || url.contains("localhost") || url.contains("192.168.1.2")) {
+                return DEFAULT_SERVER
+            }
+            return url
+        }
 
         fun hashPin(pin: String, salt: String): String {
             val md = MessageDigest.getInstance("SHA-256")

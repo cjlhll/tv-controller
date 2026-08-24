@@ -1,4 +1,5 @@
-const LOCAL_API = 'http://127.0.0.1:8787/api'
+const env = require('./env.js')
+const LOCAL_API = env.localApiUrl
 
 App({
   onLaunch() {

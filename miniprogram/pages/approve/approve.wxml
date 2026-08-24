@@ -1,24 +1,39 @@
 <view class="wrap" wx:if="{{device}}">
-  <view class="title">{{device.name}}</view>
-  <view class="muted">{{device.deviceId}}</view>
-  <view class="status">{{statusText}}</view>
-
   <view class="card">
-    <view>选择使用时长</view>
-    <view class="row">
-      <view class="btn" data-min="15" bindtap="approve">15 分钟</view>
-      <view class="btn" data-min="30" bindtap="approve">30 分钟</view>
+    <view class="device-top">
+      <view>
+        <view class="device-name">{{device.name}}</view>
+        <view class="device-meta">{{device.formText}} · {{device.shortId}}</view>
+      </view>
+      <view class="pill pill-{{statusKind}}">{{statusText}}</view>
     </view>
-    <view class="row">
-      <view class="btn" data-min="60" bindtap="approve">1 小时</view>
-      <view class="btn" data-min="120" bindtap="approve">2 小时</view>
-    </view>
-    <view class="muted">自定义分钟</view>
+  </view>
+
+  <view class="section-label">{{isUnlocked ? '延长使用时间' : '选择使用时长'}}</view>
+  <view class="grid">
+    <view
+      wx:for="{{presets}}"
+      wx:key="key"
+      class="opt {{selectedKey === item.key ? 'opt-on' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="selectPreset"
+    >{{item.label}}</view>
+  </view>
+
+  <view class="section-label">自定义</view>
+  <view class="field">
     <input class="input" type="number" value="{{customMin}}" bindinput="onCustom" />
-    <view class="btn" bindtap="approveCustom">按自定义时长批准</view>
-    <view class="btn btn-ghost" bindtap="reject">拒绝并保持锁定</view>
+    <view class="unit">分钟</view>
+  </view>
+
+  <view class="actions">
+    <view class="btn btn-primary" bindtap="approveSelected">{{approveLabel}}</view>
+    <view class="btn btn-danger" bindtap="reject">{{isUnlocked ? '立即回锁' : '拒绝并保持锁定'}}</view>
   </view>
 </view>
 <view class="wrap" wx:else>
-  <view class="muted">设备不存在或未绑定</view>
+  <view class="card empty">
+    <view class="empty-title">找不到设备</view>
+    <view class="empty-desc">它可能尚未绑定到当前账号。</view>
+  </view>
 </view>

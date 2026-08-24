@@ -1,22 +1,36 @@
 <view class="wrap">
-  <view class="title">TV Lock</view>
-  <view class="muted">打开设备后会推送服务通知。点批准可限时解锁。</view>
-
-  <view wx:if="{{empty}}" class="card">
-    <view>还没有绑定设备</view>
-    <view class="muted">在被控设备上打开 TV Lock，扫码或输入 6 位配对码。</view>
-  </view>
-
-  <view wx:for="{{devices}}" wx:key="deviceId" class="card">
-    <view class="title">{{item.name}}</view>
-    <view class="muted">{{item.deviceId}} · {{item.form}}</view>
-    <view class="status">{{item.statusText}}</view>
-    <view class="row">
-      <view class="btn" data-id="{{item.deviceId}}" bindtap="goApprove">批准 / 回锁</view>
-      <view class="btn btn-ghost" data-id="{{item.deviceId}}" bindtap="goLogs">记录</view>
+  <view wx:if="{{empty}}" class="card empty">
+    <view class="empty-title">还没有设备</view>
+    <view class="empty-desc">打开被控设备上的 TV Lock，扫码或输入 6 位配对码。</view>
+    <view class="stack">
+      <view class="btn btn-primary" bindtap="goBind">扫码绑定</view>
     </view>
   </view>
 
-  <view class="btn" bindtap="goBind">扫码绑定</view>
-  <view class="btn btn-ghost" bindtap="subscribe">接收下次打开提醒</view>
+  <block wx:else>
+    <view class="kicker">点设备即可批准时长。到期会自动回锁。</view>
+    <view
+      wx:for="{{devices}}"
+      wx:key="deviceId"
+      class="card card-tap card-{{item.statusKind}}"
+      data-id="{{item.deviceId}}"
+      bindtap="goApprove"
+    >
+      <view class="device-top">
+        <view>
+          <view class="device-name">{{item.name}}</view>
+          <view class="device-meta">{{item.formText}} · {{item.shortId}}</view>
+        </view>
+        <view class="pill pill-{{item.statusKind}}">{{item.statusText}}</view>
+      </view>
+      <view class="card-foot">
+        <view class="hint">{{item.actionHint}}</view>
+        <view class="link" data-id="{{item.deviceId}}" catchtap="goLogs">记录</view>
+      </view>
+    </view>
+    <view class="stack">
+      <view class="btn btn-secondary" bindtap="goBind">绑定新设备</view>
+      <view wx:if="{{canSubscribe}}" class="btn btn-secondary" bindtap="subscribe">接收打开提醒</view>
+    </view>
+  </block>
 </view>

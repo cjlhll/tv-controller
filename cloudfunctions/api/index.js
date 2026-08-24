@@ -36,7 +36,7 @@ function normalizeEvent(event) {
 }
 
 function ok(data) {
-  return { ok: true, ...data }
+  return { ok: true, now: logic.nowMs(), ...data }
 }
 
 function fail(code, message, extra) {
@@ -287,7 +287,7 @@ async function handleUser(action, payload, openid) {
         durationMin: minutes,
         createdAt: now,
       })
-      return ok({ device: logic.publicDevice(unlocked) })
+      return ok({ device: logic.publicDevice(unlocked), minutes })
     }
 
     logic.applyReject(device, now)

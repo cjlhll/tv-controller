@@ -1,5 +1,1 @@
-.input {
-  color: #f4f7fb;
-  font-size: 40rpx;
-  letter-spacing: 8rpx;
-}
+/* 样式在 app.wxss */

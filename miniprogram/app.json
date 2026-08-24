@@ -7,9 +7,9 @@
   ],
   "window": {
     "navigationBarTitleText": "TV Lock",
-    "navigationBarBackgroundColor": "#0B1220",
+    "navigationBarBackgroundColor": "#0F172A",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#0B1220",
+    "backgroundColor": "#0F172A",
     "backgroundTextStyle": "light"
   },
   "style": "v2",

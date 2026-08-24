@@ -15,18 +15,17 @@ node cloudfunctions/api/logic.test.js
 node cloud/local-server/server.js
 ```
 
-- API：`POST http://127.0.0.1:8787/api`
-- 本机审批页：http://127.0.0.1:8787/
+- API：`POST http://op.caojian.shop:8787/api`（Docker 在 `192.168.1.2`，`./scripts/deploy-api.sh`）
+- 审批页：http://op.caojian.shop:8787/
+- 健康检查：http://op.caojian.shop:8787/health
 
 手机 USB 在 **Windows** 上，WSL2 看不到这台设备。用 Windows 的 `adb.exe`：
 
 ```bash
-# 先确认 Windows 能看到手机
 adb.exe devices
-
-# 把电脑 8787 转到手机 localhost（APK 默认服务器就是这个）
-adb.exe reverse tcp:8787 tcp:8787
 ```
+
+不要 `adb reverse`。APK 和小程序都走域名。
 
 若 WSL 里直接打 `adb.exe` 找不到，用完整路径，常见位置：
 
@@ -54,7 +53,7 @@ cd android
 
 首次在测试机打开应用：
 
-1. 填服务器：`http://127.0.0.1:8787/api`（配合 `adb reverse`）
+1. 填服务器：`http://op.caojian.shop:8787/api`（已装过的测试机若还是本机/内网 IP，长按锁屏标题改回来）
 2. 设 4–6 位家长 PIN
 3. 授予「显示在其他应用上层」
 4. 忽略电池优化
@@ -82,11 +81,11 @@ adb.exe shell dpm remove-active-admin com.cjlhll.tvlock/.lock.LockAdminReceiver
 
 当前这台 M6 Note 测试机已经设过 Device Owner。若重装同包名应用，Owner 会保留；要卸掉再用上面的 `remove-active-admin`。
 
-部分系统（含 Device Owner）会禁止应用明文 HTTP。APK 对 `http://` 走套接字回退，本机 `127.0.0.1` 联调可用；上云开发请改 HTTPS 地址。
+部分系统（含 Device Owner）会禁止应用明文 HTTP。APK 对 `http://` 走套接字回退；正式上线再改 HTTPS。
 
 ## 4. 微信小程序 + 云开发
 
-**接口测试号不能开通云开发**（开发者工具会报「测试号不能使用云服务」，左侧也不会出现云函数节点）。当前联调用本机 API：小程序 `env.js` 里 `useLocalApi: true`，模拟器请求 `http://127.0.0.1:8787/api`。要上订阅消息 / 真机微信，需要正式小程序 AppID 并开通云开发。
+**接口测试号不能开通云开发**（开发者工具会报「测试号不能使用云服务」，左侧也不会出现云函数节点）。当前联调小程序请求 `http://op.caojian.shop:8787/api`。要上订阅消息 / 真机正式版，需要正式小程序 AppID。
 
 1. 用 **Windows 微信开发者工具** 打开 `C:\Users\caoji\tv-controller`（不要用 `\\wsl.localhost\...`，WSL 路径经常不重新编译 JS，会一直走旧的 `cloud.callFunction`）。云函数目录是 `cloudfunctions/api`。详情里勾选「不校验合法域名」。
 2. 填真实 AppID，替换 `touristappid`。
