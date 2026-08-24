@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/setup_title"
+            android:textColor="@color/text"
+            android:textSize="@dimen/title_size"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/ownerStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/muted"
+            android:textSize="@dimen/body_size" />
+
+        <EditText
+            android:id="@+id/serverUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_card"
+            android:focusable="true"
+            android:hint="服务器地址"
+            android:inputType="textUri"
+            android:minHeight="@dimen/btn_min_height"
+            android:padding="12dp"
+            android:textColor="@color/text"
+            android:textColorHint="@color/muted"
+            android:textSize="@dimen/body_size" />
+
+        <EditText
+            android:id="@+id/deviceName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:focusable="true"
+            android:hint="设备名称"
+            android:minHeight="@dimen/btn_min_height"
+            android:padding="12dp"
+            android:textColor="@color/text"
+            android:textColorHint="@color/muted"
+            android:textSize="@dimen/body_size" />
+
+        <EditText
+            android:id="@+id/pin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:focusable="true"
+            android:hint="家长 PIN（4-6 位数字）"
+            android:inputType="numberPassword"
+            android:maxLength="6"
+            android:minHeight="@dimen/btn_min_height"
+            android:padding="12dp"
+            android:textColor="@color/text"
+            android:textColorHint="@color/muted"
+            android:textSize="@dimen/body_size" />
+
+        <Button
+            android:id="@+id/overlayButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/btn_ghost"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:text="授予叠加层权限（唤醒拉起锁屏）"
+            android:textColor="@color/text"
+            android:textSize="@dimen/body_size" />
+
+        <Button
+            android:id="@+id/batteryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/btn_ghost"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:text="忽略电池优化"
+            android:textColor="@color/text"
+            android:textSize="@dimen/body_size" />
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/btn_primary"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:text="保存并进入锁屏"
+            android:textColor="#111111"
+            android:textSize="@dimen/body_size" />
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TvLock" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">#111111</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:colorControlHighlight">@color/accent</item>
+    </style>
+
+    <style name="Theme.TvLock.Lock" parent="Theme.TvLock">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowSwipeToDismiss">false</item>
+        <item name="android:keepScreenOn">true</item>
+    </style>
+</resources>

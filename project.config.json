@@ -1,0 +1,46 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "enhance": true,
+    "postcss": true,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "coverView": true,
+    "urlCheck": false,
+    "compileWorklet": false,
+    "ignoreUploadUnusedFiles": true,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "appid": "wx7d3b9c23e55f5c53",
+  "projectname": "tv-lock",
+  "libVersion": "3.5.5",
+  "cloudfunctionTemplateRoot": "cloudfunctions/",
+  "condition": {},
+  "srcMiniprogramRoot": "miniprogram/",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  },
+  "simulatorPluginLibVersion": {},
+  "isGameTourist": false
+}

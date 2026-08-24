@@ -1,0 +1,25 @@
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml
+*.apk
+*.ap_
+*.aab
+captures/
+
+# Node / 云开发
+node_modules/
+cloud/local-server/data.json
+cloudfunctions/**/node_modules/
+
+# WeChat
+miniprogram/project.private.config.json
+project.private.config.json
+
+# OS
+.DS_Store
+Thumbs.db
+*.log

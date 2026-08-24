@@ -1,0 +1,8 @@
+{
+  "subscribeTemplateId": "YOUR_TEMPLATE_ID",
+  "miniprogramState": "developer",
+  "subscribePage": "pages/approve/approve",
+  "thing1": "设备名称",
+  "thing2": "设备已打开，等待批准",
+  "time3FromNow": true
+}

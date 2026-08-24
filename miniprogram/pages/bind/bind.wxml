@@ -1,0 +1,9 @@
+<view class="wrap">
+  <view class="title">绑定设备</view>
+  <view class="muted">扫描电视/测试机上的二维码，或输入 6 位配对码。</view>
+  <view class="card">
+    <input class="input" placeholder="配对码" maxlength="8" value="{{token}}" bindinput="onToken" />
+  </view>
+  <view class="btn" bindtap="scan">扫码</view>
+  <view class="btn btn-ghost" bindtap="bind">手动绑定</view>
+</view>

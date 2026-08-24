@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="title_size">28sp</dimen>
+    <dimen name="body_size">16sp</dimen>
+    <dimen name="btn_min_height">56dp</dimen>
+    <dimen name="qr_size">220dp</dimen>
+</resources>

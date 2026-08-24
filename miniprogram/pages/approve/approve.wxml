@@ -1,0 +1,24 @@
+<view class="wrap" wx:if="{{device}}">
+  <view class="title">{{device.name}}</view>
+  <view class="muted">{{device.deviceId}}</view>
+  <view class="status">{{statusText}}</view>
+
+  <view class="card">
+    <view>选择使用时长</view>
+    <view class="row">
+      <view class="btn" data-min="15" bindtap="approve">15 分钟</view>
+      <view class="btn" data-min="30" bindtap="approve">30 分钟</view>
+    </view>
+    <view class="row">
+      <view class="btn" data-min="60" bindtap="approve">1 小时</view>
+      <view class="btn" data-min="120" bindtap="approve">2 小时</view>
+    </view>
+    <view class="muted">自定义分钟</view>
+    <input class="input" type="number" value="{{customMin}}" bindinput="onCustom" />
+    <view class="btn" bindtap="approveCustom">按自定义时长批准</view>
+    <view class="btn btn-ghost" bindtap="reject">拒绝并保持锁定</view>
+  </view>
+</view>
+<view class="wrap" wx:else>
+  <view class="muted">设备不存在或未绑定</view>
+</view>

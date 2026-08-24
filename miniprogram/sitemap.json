@@ -1,0 +1,9 @@
+{
+  "desc": "tv-lock",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

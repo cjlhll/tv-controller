@@ -1,0 +1,11 @@
+{
+  "name": "tvlock-local-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local API for phone loop testing (same contract as cloud function)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node ../../cloudfunctions/api/logic.test.js"
+  }
+}

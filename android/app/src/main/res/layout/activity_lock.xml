@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="28dp">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:focusable="true"
+            android:padding="8dp"
+            android:text="@string/lock_title"
+            android:textColor="@color/text"
+            android:textSize="@dimen/title_size"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="@string/lock_pending"
+            android:textColor="@color/muted"
+            android:textSize="@dimen/body_size" />
+
+        <ImageView
+            android:id="@+id/qr"
+            android:layout_width="@dimen/qr_size"
+            android:layout_height="@dimen/qr_size"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_card"
+            android:contentDescription="pair qr"
+            android:padding="12dp" />
+
+        <TextView
+            android:id="@+id/pairCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:letterSpacing="0.2"
+            android:textColor="@color/accent"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/deviceId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/muted"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/pinButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:background="@drawable/btn_primary"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:nextFocusUp="@id/title"
+            android:text="@string/pin_unlock"
+            android:textColor="#111111"
+            android:textSize="@dimen/body_size" />
+
+        <Button
+            android:id="@+id/refreshButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/btn_ghost"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:nextFocusUp="@id/pinButton"
+            android:text="刷新配对码"
+            android:textColor="@color/text"
+            android:textSize="@dimen/body_size" />
+
+        <Button
+            android:id="@+id/lockNowButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/btn_ghost"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:text="立即回锁"
+            android:textColor="@color/text"
+            android:textSize="@dimen/body_size"
+            android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

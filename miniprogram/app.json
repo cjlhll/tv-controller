@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/bind/bind",
+    "pages/approve/approve",
+    "pages/logs/logs"
+  ],
+  "window": {
+    "navigationBarTitleText": "TV Lock",
+    "navigationBarBackgroundColor": "#0B1220",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0B1220",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

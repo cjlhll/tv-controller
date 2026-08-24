@@ -1,0 +1,7 @@
+<view class="wrap">
+  <view wx:if="{{!logs.length}}" class="muted">暂无记录</view>
+  <view wx:for="{{logs}}" wx:key="createdAt" class="card">
+    <view>{{item.actionText}}</view>
+    <view class="muted">{{item.timeText}} <text wx:if="{{item.extra}}">· {{item.extra}}</text></view>
+  </view>
+</view>
