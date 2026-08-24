@@ -1,8 +1,8 @@
 {
-  "subscribeTemplateId": "YOUR_TEMPLATE_ID",
+  "subscribeTemplateId": "fx5fNlSC6_wEfd9ub-bqwbOH9EC8MVIHPK29WSaU-oE",
   "miniprogramState": "developer",
   "subscribePage": "pages/approve/approve",
-  "thing1": "设备名称",
-  "thing2": "设备已打开，等待批准",
-  "time3FromNow": true
+  "thing1": "解锁名称",
+  "thing2": "等待家长批准",
+  "thing3": "请打开小程序选择时长"
 }

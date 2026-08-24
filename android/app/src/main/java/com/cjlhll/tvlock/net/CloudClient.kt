@@ -41,6 +41,8 @@ class CloudClient(private val prefs: AppPrefs) {
 
     fun wake(): JSONObject = post("wake")
 
+    fun requestUnlock(): JSONObject = post("requestUnlock")
+
     fun pinUnlock(durationMin: Int = 30): JSONObject =
         post("pinUnlock", JSONObject().put("durationMin", durationMin))
 

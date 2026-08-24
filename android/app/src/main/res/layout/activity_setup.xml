@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
@@ -78,9 +79,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:background="@drawable/btn_ghost"
+            app:backgroundTint="@null"
             android:focusable="true"
             android:minHeight="@dimen/btn_min_height"
             android:text="授予叠加层权限（唤醒拉起锁屏）"
+            android:textAllCaps="false"
             android:textColor="@color/text"
             android:textSize="@dimen/body_size" />
 
@@ -90,11 +93,28 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:background="@drawable/btn_ghost"
+            app:backgroundTint="@null"
             android:focusable="true"
             android:minHeight="@dimen/btn_min_height"
             android:text="忽略电池优化"
+            android:textAllCaps="false"
             android:textColor="@color/text"
             android:textSize="@dimen/body_size" />
+
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/btn_ghost"
+            app:backgroundTint="@null"
+            android:focusable="true"
+            android:minHeight="@dimen/btn_min_height"
+            android:text="返回锁屏"
+            android:textAllCaps="false"
+            android:textColor="@color/text"
+            android:textSize="@dimen/body_size"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/saveButton"
@@ -102,10 +122,12 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:background="@drawable/btn_primary"
+            app:backgroundTint="@null"
             android:focusable="true"
             android:minHeight="@dimen/btn_min_height"
             android:text="保存并进入锁屏"
-            android:textColor="#111111"
+            android:textAllCaps="false"
+            android:textColor="@color/accent_on"
             android:textSize="@dimen/body_size" />
     </LinearLayout>
 </ScrollView>

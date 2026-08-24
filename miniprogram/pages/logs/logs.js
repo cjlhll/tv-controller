@@ -4,6 +4,7 @@ const ACTION = {
   register: '注册设备',
   bind: '绑定',
   wake: '打开 / 唤醒',
+  request: '申请解锁',
   approve: '批准解锁',
   reject: '拒绝',
   pin: '本机 PIN 解锁',

@@ -4,6 +4,7 @@ const crypto = require('crypto')
 
 const PAIR_TTL_MS = 10 * 60 * 1000
 const WAKE_NOTIFY_DEBOUNCE_MS = 60 * 1000
+const REQUEST_NOTIFY_DEBOUNCE_MS = 15 * 1000
 const DEFAULT_PIN_DURATION_MIN = 30
 
 function nowMs() {
@@ -34,9 +35,9 @@ function formatTime(ts) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-function publicDevice(device) {
+function publicDevice(device, now = nowMs()) {
   if (!device) return null
-  return {
+  const out = {
     deviceId: device.deviceId,
     name: device.name,
     form: device.form,
@@ -46,6 +47,11 @@ function publicDevice(device) {
     onlineAt: device.onlineAt || 0,
     lastWakeAt: device.lastWakeAt || 0,
   }
+  if (device.pairToken && (device.pairTokenExpireAt || 0) > now) {
+    out.pairToken = device.pairToken
+    out.pairTokenExpireAt = device.pairTokenExpireAt
+  }
+  return out
 }
 
 function expireIfNeeded(device, now) {
@@ -108,6 +114,23 @@ function applyWake(device, now) {
   return { device, notify, reason: notify ? 'pending' : 'debounced' }
 }
 
+function applyRequestUnlock(device, now) {
+  expireIfNeeded(device, now)
+  device.lastWakeAt = now
+  device.onlineAt = now
+  if (device.status === 'unlocked' && (device.unlockUntil || 0) > now) {
+    return { device, notify: false, reason: 'still_unlocked' }
+  }
+  if (device.status === 'unbound') {
+    return { device, notify: false, reason: 'unbound' }
+  }
+  device.status = 'pending'
+  device.unlockUntil = 0
+  const notify = now - (device.lastNotifyAt || 0) >= REQUEST_NOTIFY_DEBOUNCE_MS
+  if (notify) device.lastNotifyAt = now
+  return { device, notify, reason: notify ? 'requested' : 'debounced' }
+}
+
 function applyApprove(device, durationMin, now) {
   expireIfNeeded(device, now)
   const minutes = Math.max(1, Math.min(24 * 60, Number(durationMin) || 30))
@@ -151,6 +174,7 @@ function assertDeviceAuth(device, secret) {
 module.exports = {
   PAIR_TTL_MS,
   WAKE_NOTIFY_DEBOUNCE_MS,
+  REQUEST_NOTIFY_DEBOUNCE_MS,
   DEFAULT_PIN_DURATION_MIN,
   nowMs,
   randomToken,
@@ -162,6 +186,7 @@ module.exports = {
   applyRegister,
   applyRefreshPair,
   applyWake,
+  applyRequestUnlock,
   applyApprove,
   applyReject,
   applyLock,

@@ -22,6 +22,15 @@ const wakeSoon = logic.applyWake(device, now + 2000)
 assert.equal(wakeSoon.notify, false)
 assert.equal(wakeSoon.reason, 'debounced')
 
+const requested = logic.applyRequestUnlock(device, now + 20000)
+assert.equal(requested.device.status, 'pending')
+assert.equal(requested.notify, true)
+assert.equal(requested.reason, 'requested')
+
+const requestSoon = logic.applyRequestUnlock(device, now + 25000)
+assert.equal(requestSoon.notify, false)
+assert.equal(requestSoon.reason, 'debounced')
+
 const approved = logic.applyApprove(device, 15, now + 3000)
 assert.equal(approved.device.status, 'unlocked')
 assert.equal(approved.minutes, 15)
@@ -37,5 +46,10 @@ assert.equal(device.status, 'locked')
 logic.applyReject(device, now + 4000)
 assert.equal(device.status, 'locked')
 assert.equal(device.unlockUntil, 0)
+
+logic.applyRefreshPair(device, now + 5000)
+const pub = logic.publicDevice(device, now + 5000)
+assert.ok(pub.pairToken)
+assert.ok(pub.pairTokenExpireAt > now + 5000)
 
 console.log('logic.test.js ok')

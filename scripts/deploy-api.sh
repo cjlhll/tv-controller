@@ -13,9 +13,15 @@ rsync -az --delete \
 
 rsync -az \
   "$ROOT/cloud/local-server/server.js" \
+  "$ROOT/cloud/local-server/wechat-notify.js" \
   "$ROOT/cloud/local-server/Dockerfile" \
   "$ROOT/cloud/local-server/docker-compose.yml" \
   "$HOST:$REMOTE_DIR/cloud/local-server/"
+
+if [[ -f "$ROOT/cloud/local-server/.env" ]]; then
+  rsync -az "$ROOT/cloud/local-server/.env" "$HOST:$REMOTE_DIR/cloud/local-server/.env"
+  ssh -o BatchMode=yes "$HOST" "chmod 600 '$REMOTE_DIR/cloud/local-server/.env'"
+fi
 
 if [[ -f "$ROOT/cloud/local-server/data.json" ]]; then
   ssh -o BatchMode=yes "$HOST" "test -s '$REMOTE_DIR/data/data.json'" || \
@@ -34,6 +40,7 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 chown -R 1000:1000 /opt/tvlock/data
-docker compose -f cloud/local-server/docker-compose.yml up -d --build
-docker compose -f cloud/local-server/docker-compose.yml ps
+cd /opt/tvlock/cloud/local-server
+docker compose up -d --build
+docker compose ps
 EOF

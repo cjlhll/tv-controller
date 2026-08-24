@@ -54,6 +54,11 @@ class SetupActivity : AppCompatActivity() {
                 Toast.makeText(this, "已忽略电池优化", Toast.LENGTH_SHORT).show()
             }
         }
+        if (prefs.setupDone) {
+            binding.backButton.visibility = android.view.View.VISIBLE
+            binding.saveButton.text = "保存并返回锁屏"
+            binding.backButton.setOnClickListener { goLock() }
+        }
         binding.saveButton.setOnClickListener { save() }
     }
 
@@ -96,8 +101,7 @@ class SetupActivity : AppCompatActivity() {
                     }
                     prefs.setupDone = true
                     LockService.start(this)
-                    startActivity(Intent(this, LockActivity::class.java))
-                    finish()
+                    goLock()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "register failed", e)
@@ -107,6 +111,11 @@ class SetupActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun goLock() {
+        startActivity(Intent(this, LockActivity::class.java))
+        finish()
     }
 
     companion object {

@@ -1,14 +1,15 @@
 const env = require('../env.js')
 const LOCAL_API = env.localApiUrl
-const LOCAL_OPENID = env.localOpenid || 'mp-dev'
 
-function call(action, data) {
+let cachedOpenid = ''
+
+function request(action, data) {
   return new Promise((resolve, reject) => {
     wx.request({
       url: LOCAL_API,
       method: 'POST',
       header: { 'content-type': 'application/json' },
-      data: Object.assign({ action: action, openid: LOCAL_OPENID }, data || {}),
+      data: Object.assign({ action: action }, data || {}),
       success(res) {
         const body = res.data || {}
         if (!body.ok) {
@@ -22,6 +23,51 @@ function call(action, data) {
       },
     })
   })
+}
+
+function getOpenid() {
+  if (cachedOpenid) return Promise.resolve(cachedOpenid)
+  try {
+    const stored = wx.getStorageSync('openid')
+    if (stored && stored !== 'mp-dev' && !String(stored).startsWith('local-')) {
+      cachedOpenid = stored
+      return Promise.resolve(cachedOpenid)
+    }
+  } catch (e) {
+    // ignore storage errors and fall through to wx.login
+  }
+  return new Promise((resolve, reject) => {
+    wx.login({
+      success(loginRes) {
+        if (!loginRes.code) {
+          reject(new Error('wx.login 没有返回 code'))
+          return
+        }
+        request('login', { code: loginRes.code })
+          .then((body) => {
+            if (!body.openid) {
+              reject(new Error('登录失败'))
+              return
+            }
+            cachedOpenid = body.openid
+            try {
+              wx.setStorageSync('openid', body.openid)
+            } catch (e) {
+              // ignore
+            }
+            resolve(cachedOpenid)
+          })
+          .catch(reject)
+      },
+      fail(err) {
+        reject(new Error((err && err.errMsg) || 'wx.login 失败'))
+      },
+    })
+  })
+}
+
+function call(action, data) {
+  return getOpenid().then((openid) => request(action, Object.assign({ openid }, data || {})))
 }
 
 function remainMinutes(unlockUntil, now) {
@@ -70,6 +116,7 @@ function shortId(deviceId) {
 
 module.exports = {
   call: call,
+  getOpenid: getOpenid,
   remainMinutes: remainMinutes,
   remainText: remainText,
   statusKind: statusKind,

@@ -31,14 +31,8 @@
 
         <activity
             android:name=".ui.SetupActivity"
-            android:exported="true"
-            android:theme="@style/Theme.TvLock">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false"
+            android:theme="@style/Theme.TvLock" />
 
         <activity
             android:name=".ui.LockActivity"
@@ -48,7 +42,13 @@
             android:showOnLockScreen="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
-            android:theme="@style/Theme.TvLock.Lock" />
+            android:theme="@style/Theme.TvLock.Lock">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <!-- 索尼二期可启用：设为桌面。默认关闭，避免替换手机启动器。 -->
         <activity-alias

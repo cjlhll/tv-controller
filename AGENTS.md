@@ -26,7 +26,7 @@
 - `pending`：已上报打开，等批准。
 - `unlocked`：`unlockUntil > now`。服务仍在跑。
 
-配对码 6 位，10 分钟过期，用一次即作废。绑定后锁屏不再显示配对码；要重新绑，点「刷新配对码」。
+配对码 6 位，10 分钟过期，用一次即作废。锁屏在锁定/未绑定时都显示「刷新配对码」；点了才出二维码。长按标题进设置，不要靠这个找配对码。应用图标直接进锁屏，不再进初始设置页。
 
 本机 PIN（4–6 位，SHA-256+salt 存在手机 SharedPreferences）走 `pinUnlock`，默认 30 分钟。当前测试机 PIN 是 **`2468`**。长按锁屏标题回设置页。
 
@@ -41,7 +41,7 @@ Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLoc
 微信小程序 --wx.request 或 callFunction-->  同一套 action
 ```
 
-**现在（一期联调）不走云开发。** 当前开发者工具用的是「接口测试号」`wx7d3b9c23e55f5c53`，微信返回「测试号不能使用云服务」。小程序只请求自建 API。
+**现在（一期联调）不走云开发。** 小程序已切正式 AppID `wx0ae9a52d7f29cc39`，只请求自建 API。订阅消息走 `subscribe/send`，密钥在服务器 `.env`，不要写进仓库。旧测试号 `wx7d3b9c23e55f5c53` 不要再打开。
 
 ### 自建 API（Docker @ 192.168.1.2）
 
@@ -58,18 +58,19 @@ Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLoc
 
 | 调用方 | action | 鉴权 |
 |---|---|---|
-| 设备 | `register` `refreshPair` `wake` `state` `heartbeat` `pinUnlock` `lock` | `deviceId` + `deviceSecret`（`register` 可首次不带） |
-| 家长 | `bind` `myDevices` `approve` `reject` `logs` `setDeviceName` | 本机用 `openid`；云函数用 `wx.cloud` 的 OPENID |
+| 设备 | `register` `refreshPair` `wake` `state` `heartbeat` `pinUnlock` `lock` `requestUnlock` | `deviceId` + `deviceSecret`（`register` 可首次不带） |
+| 家长 | `login` `bind` `myDevices` `approve` `reject` `logs` `setDeviceName` | 小程序 `wx.login` → `login` 换真实 openid；本机审批页用 `local-parent` |
 
 `bind` 需要 `pairToken`。`approve` 需要 `deviceId` + `durationMin`。
 
 联调 openid：
 
-- 小程序写死 `mp-dev`（[`miniprogram/utils/api.js`](miniprogram/utils/api.js)）
-- 本机审批页用 `local-parent`
+- 小程序：`wx.login` 换真实 openid（[`miniprogram/utils/api.js`](miniprogram/utils/api.js)）
+- 本机审批页用 `local-parent`（收不到订阅消息）
 - 一台设备可绑多个 openid
+- 微信密钥：`cloud/local-server/.env`（已 gitignore），部署到 `192.168.1.2:/opt/tvlock/cloud/local-server/.env`
 
-测试机当前 `deviceId`：`edbcef7b8488db6c`（名称 M6 Note）。已绑 `local-parent` 和 `mp-dev`。
+测试机当前 `deviceId`：`edbcef7b8488db6c`（名称 M6 Note）。已绑 `local-parent` 和旧的 `mp-dev`。正式号登录后要重新扫码绑定，订阅才会打到真实 openid。
 
 ### 小程序
 
@@ -114,8 +115,8 @@ WSL 改了 `miniprogram/` / `cloudfunctions/` / `project.config.json` 后同步�
 
 ```bash
 rsync -a --delete \
-  --exclude android --exclude cloud/local-server/data.json \
-  /home/cjlhll/test/tv-controller/ /mnt/c/Users/caoji/tv-controller/
+ --exclude android --exclude cloud/local-server/data.json --exclude cloud/local-server/.env \
+ /home/cjlhll/test/tv-controller/ /mnt/c/Users/caoji/tv-controller/
 ```
 
 只改小程序时至少同步 `miniprogram/`。
@@ -135,13 +136,13 @@ Cursor / 编译 APK / 本机 API：在 **WSL Debian**。
 - 微信 CLI：`C:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat`，IDE HTTP `127.0.0.1:10555`。CLI 不认 `\\wsl$\` 工程路径，要对 `C:\Users\caoji\tv-controller`。
 - 自动化：`cli auto --project C:\Users\caoji\tv-controller --auto-port 9420`。从 WSL 连 `ws://172.18.192.1:9420`（Windows 在 `::` 上听 9420）。`miniprogram-automator` 的 `checkVersion` 在此 IDE 版本上会炸，需跳过。
 
-当前测试号 AppID：`wx7d3b9c23e55f5c53`（`project.config.json` 已对齐）。
+当前正式 AppID：`wx0ae9a52d7f29cc39`（`project.config.json` 已对齐）。开发者工具必须用这个号打开工程，真机预览才能收订阅消息。
 
 ---
 
 ## 5. 日常联调顺序
 
-1. 确认 `http://op.caojian.shop:8787/health` 返回 `{"ok":true}`。本机改 API 后跑 `./scripts/deploy-api.sh`。
+1. 确认 `http://op.caojian.shop:8787/health` 返回 `{"ok":true,"wechat":true}`。本机改 API 后跑 `./scripts/deploy-api.sh`。
 2. `adb.exe devices` 有手机。不要 `adb reverse`。
 3. 需要装新包：`cd android && ./gradlew :app:assembleDebug`，再 `./scripts/install-phone.sh`。
 4. 改小程序：先改 WSL，再 rsync 到 `C:\Users\caoji\tv-controller`，用开发者工具打开 **Windows 目录**，编译一次。详情勾选「不校验合法域名」，并把 `http://op.caojian.shop` 写入 RequestDomain。
@@ -181,6 +182,7 @@ curl -sS -X POST http://op.caojian.shop:8787/api \
 - 同步到 Windows 副本后再让用户编译；不要只改 WSL 就声称「小程序已更新」。
 - 不要提交 `cloud/local-server/data.json`、`android/local.properties`、密钥、PIN 明文到公共远程（PIN `2468` 仅本机测试）。
 - 索尼适配：横屏 / `values-television` / 遥控器焦点 / `DREAMING_STOPPED` / Leanback，不要另起一个 APK。
+- 订阅消息：正式 AppID + `.env` 里的 `WECHAT_APPID` / `WECHAT_SECRET` + 模板 `SUBSCRIBE_TEMPLATE_ID`。家长先 `requestSubscribeMessage`，孩子再 `requestUnlock` / `wake`。不要把 AppSecret 写进仓库或小程序。详见 `docs/setup.md` 4.1。
 
 ---
 

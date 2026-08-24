@@ -4,6 +4,7 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const logic = require('../../cloudfunctions/api/logic')
+const wechatNotify = require('./wechat-notify')
 
 const PORT = Number(process.env.PORT || 8787)
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data.json')
@@ -82,6 +83,19 @@ function addLog(db, entry) {
   db.logs = db.logs.slice(0, 200)
 }
 
+async function notifyIfNeeded(db, device, shouldNotify, reason, kind, minutes) {
+  if (!shouldNotify) return { skipped: true, reason }
+  try {
+    return await wechatNotify.notifyParents(
+      device,
+      db.bindings || [],
+      wechatNotify.fieldsFor(kind || 'wake', device, minutes)
+    )
+  } catch (err) {
+    return { skipped: false, error: err.message }
+  }
+}
+
 function handleDevice(db, action, payload) {
   const now = logic.nowMs()
   if (action === 'register') {
@@ -123,14 +137,28 @@ function handleDevice(db, action, payload) {
     persistDevice(db, device)
     return ok({ device: logic.publicDevice(device) })
   }
-  if (action === 'wake') {
-    const result = logic.applyWake(device, now)
+  if (action === 'wake' || action === 'requestUnlock') {
+    const result =
+      action === 'requestUnlock' ? logic.applyRequestUnlock(device, now) : logic.applyWake(device, now)
     persistDevice(db, result.device)
-    addLog(db, { deviceId: device.deviceId, action: 'wake', detail: result.reason, createdAt: now })
-    return ok({
-      device: logic.publicDevice(result.device),
-      notify: { skipped: true, reason: 'local_server' },
+    addLog(db, {
+      deviceId: device.deviceId,
+      action: action === 'requestUnlock' ? 'request' : 'wake',
+      detail: result.reason,
+      createdAt: now,
     })
+    return notifyIfNeeded(
+      db,
+      result.device,
+      result.notify,
+      result.reason,
+      action === 'requestUnlock' ? 'request' : 'wake'
+    ).then((notify) =>
+      ok({
+        device: logic.publicDevice(result.device),
+        notify,
+      })
+    )
   }
   if (action === 'pinUnlock') {
     const { device: unlocked, minutes } = logic.applyApprove(
@@ -206,7 +234,9 @@ function handleUser(db, action, payload) {
       durationMin: minutes,
       createdAt: now,
     })
-    return ok({ device: logic.publicDevice(unlocked), minutes })
+    return notifyIfNeeded(db, unlocked, true, 'approved', 'approve', minutes).then((notify) =>
+      ok({ device: logic.publicDevice(unlocked), minutes, notify })
+    )
   }
   if (action === 'reject') {
     logic.applyReject(device, now)
@@ -220,6 +250,12 @@ function handleUser(db, action, payload) {
 function dispatch(db, payload) {
   const action = payload.action
   if (!action) return fail('NO_ACTION', '缺少 action')
+  if (action === 'login') {
+    return wechatNotify
+      .code2Session(payload.code)
+      .then((sess) => ok({ openid: sess.openid }))
+      .catch((err) => fail('LOGIN', err.message))
+  }
   const deviceActions = new Set([
     'register',
     'refreshPair',
@@ -228,6 +264,7 @@ function dispatch(db, payload) {
     'heartbeat',
     'pinUnlock',
     'lock',
+    'requestUnlock',
   ])
   const userActions = new Set(['bind', 'myDevices', 'approve', 'reject', 'logs', 'setDeviceName'])
   if (deviceActions.has(action)) return handleDevice(db, action, payload)
@@ -321,7 +358,7 @@ const server = http.createServer(async (req, res) => {
     return
   }
   if (req.method === 'GET' && url.pathname === '/health') {
-    json(res, 200, { ok: true })
+    json(res, 200, { ok: true, wechat: wechatNotify.isConfigured() })
     return
   }
 
@@ -329,7 +366,7 @@ const server = http.createServer(async (req, res) => {
     const db = loadDb()
     try {
       const payload = await readBody(req)
-      const result = dispatch(db, payload)
+      const result = await dispatch(db, payload)
       saveDb(db)
       json(res, 200, result)
     } catch (err) {

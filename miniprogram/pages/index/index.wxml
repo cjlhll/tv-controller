@@ -1,9 +1,10 @@
 <view class="wrap">
   <view wx:if="{{empty}}" class="card empty">
     <view class="empty-title">还没有设备</view>
-    <view class="empty-desc">打开被控设备上的 TV Lock，扫码或输入 6 位配对码。</view>
+    <view class="empty-desc">打开被控设备上的 TV Lock，扫码或输入 6 位配对码。正式号需重新绑定一次。</view>
     <view class="stack">
       <view class="btn btn-primary" bindtap="goBind">扫码绑定</view>
+      <view wx:if="{{canSubscribe}}" class="btn btn-secondary" bindtap="subscribe">接收打开提醒</view>
     </view>
   </view>
 

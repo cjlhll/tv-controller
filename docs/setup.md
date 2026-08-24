@@ -85,21 +85,36 @@ adb.exe shell dpm remove-active-admin com.cjlhll.tvlock/.lock.LockAdminReceiver
 
 ## 4. 微信小程序 + 云开发
 
-**接口测试号不能开通云开发**（开发者工具会报「测试号不能使用云服务」，左侧也不会出现云函数节点）。当前联调小程序请求 `http://op.caojian.shop:8787/api`。要上订阅消息 / 真机正式版，需要正式小程序 AppID。
+**当前用正式 AppID `wx0ae9a52d7f29cc39`，仍走自建 API**，不走云开发。开发者工具必须打开这个号，不要再打开旧测试号。
 
 1. 用 **Windows 微信开发者工具** 打开 `C:\Users\caoji\tv-controller`（不要用 `\\wsl.localhost\...`，WSL 路径经常不重新编译 JS，会一直走旧的 `cloud.callFunction`）。云函数目录是 `cloudfunctions/api`。详情里勾选「不校验合法域名」。
-2. 填真实 AppID，替换 `touristappid`。
+2. `project.config.json` 已是正式 AppID `wx0ae9a52d7f29cc39`。
 3. 开通云开发，把环境 ID 写入：
    - [`miniprogram/env.js`](../miniprogram/env.js) 的 `cloudEnv`
    - 云函数 [`cloudfunctions/api/config.json`](../cloudfunctions/api/config.json) 的模板 ID
 4. 上传并部署云函数 `api`（在函数目录执行 `npm install` 后再上传）。
 5. 控制台创建集合：`devices`、`bindings`、`logs`。权限先用「仅创建者可读写」不够，因为设备端走 HTTP、云函数用管理员权限写库；集合权限建议「仅云函数可写」，或开发阶段「所有用户可读，仅云函数可写」。
-6. 订阅消息：公众平台申请一次性订阅模板。常见字段用 `thing1`（设备名）、`thing2`（事件）、`time3`（时间）。把 `template_id` 写进 `env.js` 和 `config.json`。
+6. 订阅消息：已选用模板「解锁结果通知」`fx5fNlSC6_wEfd9ub-bqwbOH9EC8MVIHPK29WSaU-oE`，字段 `thing1` 解锁名称、`thing2` 解锁结果、`thing3` 温馨提示。
 7. 为云函数开通 **HTTP 访问**，把得到的 URL 填进 APK 设置里的服务器地址（POST JSON，`action` 字段与本机 API 相同）。
 
 绑定后、每次批准结束时，小程序会再拉一次订阅，方便接收下一次「设备已打开」。
 
 开发版预览才能测订阅弹窗，开发者工具模拟器不可靠。
+
+## 4.1 如何申请小程序订阅消息（推送到家长微信）
+
+正式号 `wx0ae9a52d7f29cc39` 已接入。模板「解锁结果通知」`fx5fNlSC6_wEfd9ub-bqwbOH9EC8MVIHPK29WSaU-oE` 字段为 `thing1` / `thing2` / `thing3`。AppSecret 只放 `cloud/local-server/.env`（已 gitignore），部署到 `192.168.1.2:/opt/tvlock/cloud/local-server/.env`。
+
+发送条件：
+
+1. 家长用**正式号**打开小程序（开发者工具项目 AppID 必须是 `wx0ae9a52d7f29cc39`）。
+2. `wx.login` 换到真实 openid，并重新扫码绑定（旧的 `mp-dev` 绑不到推送）。
+3. 点「接收打开提醒」或批准页弹出的订阅框，允许「解锁结果通知」。一次性订阅，同意一次只能发一条。
+4. 孩子在锁屏点「申请解锁」。服务端调 `subscribe/send`，通知点进 `pages/approve/approve?deviceId=...`。
+
+必须用**真机微信**测。模拟器、本机审批页的 `local-parent` 都收不到。
+
+一次订阅只能发一条。家长每次打开小程序或点批准时再订阅，才能收下一次申请。
 
 ## 5. 索尼电视（二期）
 
@@ -123,7 +138,7 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 
 设备（带 `deviceId` + `deviceSecret`，`register` 可首次不带）：
 
-- `register` / `refreshPair` / `wake` / `state` / `pinUnlock` / `lock`
+- `register` / `refreshPair` / `wake` / `requestUnlock` / `state` / `pinUnlock` / `lock`
 
 家长（小程序云函数带 openid；本机页可带 `openid`）：
 

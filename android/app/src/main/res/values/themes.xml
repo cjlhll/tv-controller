@@ -8,6 +8,24 @@
         <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:textColor">@color/text</item>
         <item name="android:colorControlHighlight">@color/accent</item>
+        <item name="alertDialogTheme">@style/Theme.TvLock.Dialog</item>
+        <item name="materialButtonStyle">@style/Widget.TvLock.Button</item>
+    </style>
+
+    <style name="Widget.TvLock.Button" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@null</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="cornerRadius">16dp</item>
+    </style>
+
+    <style name="Theme.TvLock.Dialog" parent="Theme.MaterialComponents.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/accent_on</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textColorPrimary">@color/text</item>
     </style>
 
     <style name="Theme.TvLock.Lock" parent="Theme.TvLock">

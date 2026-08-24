@@ -1,14 +1,17 @@
 package com.cjlhll.tvlock.ui
 
+import android.app.Dialog
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.cjlhll.tvlock.R
 import com.cjlhll.tvlock.TvLockApp
@@ -26,6 +29,9 @@ class LockActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLockBinding
     private val client by lazy { CloudClient(TvLockApp.instance.prefs) }
     private var lastToken: String = ""
+    private var extraPairToken: String = ""
+    private var extraPairExpireAt: Long = 0
+    private var requesting = false
 
     private val listener: (DeviceSnapshot) -> Unit = { snap ->
         render(snap)
@@ -40,6 +46,11 @@ class LockActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!TvLockApp.instance.prefs.setupDone) {
+            startActivity(Intent(this, SetupActivity::class.java))
+            finish()
+            return
+        }
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -55,7 +66,8 @@ class LockActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         LockService.start(this)
-        binding.deviceId.text = TvLockApp.instance.prefs.deviceId
+        binding.deviceId.text = shortId(TvLockApp.instance.prefs.deviceId)
+        binding.requestButton.setOnClickListener { requestUnlock() }
         binding.pinButton.setOnClickListener { askPin() }
         binding.refreshButton.setOnClickListener { refreshPair() }
         binding.lockNowButton.setOnClickListener { lockNow() }
@@ -71,17 +83,20 @@ class LockActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!::binding.isInitialized) return
         SessionBus.listen(listener)
-        SessionBus.last?.let { if (it.isUnlocked) {
-            LockController.stopLockTaskSafe(this)
-            finish()
-        } else {
-            LockController.startLockTaskSafe(this)
-        } }
+        SessionBus.last?.let {
+            if (it.isUnlocked) {
+                LockController.stopLockTaskSafe(this)
+                finish()
+            } else {
+                LockController.startLockTaskSafe(this)
+            }
+        }
     }
 
     override fun onPause() {
-        SessionBus.unlisten(listener)
+        if (::binding.isInitialized) SessionBus.unlisten(listener)
         super.onPause()
     }
 
@@ -100,35 +115,78 @@ class LockActivity : AppCompatActivity() {
     }
 
     private fun render(snap: DeviceSnapshot) {
-        binding.deviceId.text = snap.deviceId.ifBlank { TvLockApp.instance.prefs.deviceId }
+        binding.deviceId.text = shortId(snap.deviceId.ifBlank { TvLockApp.instance.prefs.deviceId })
+        val pairToken = rememberPair(snap)
+        val showPair = pairToken.isNotEmpty()
         when {
             snap.isUnlocked -> {
                 binding.title.text = getString(R.string.lock_unlocked)
                 val min = ((snap.unlockUntil - System.currentTimeMillis()) / 60000L).coerceAtLeast(0)
-                binding.subtitle.text = "剩余 ${min} 分钟，长按标题可改设置"
+                binding.subtitle.text = "剩余 $min 分钟，长按标题可改设置"
+                setBadge("使用中", R.drawable.bg_pill_ok, R.color.ok)
                 binding.qr.visibility = View.GONE
                 binding.pairCode.visibility = View.GONE
+                binding.requestButton.visibility = View.GONE
                 binding.refreshButton.visibility = View.GONE
                 binding.lockNowButton.visibility = View.VISIBLE
             }
             snap.isUnbound -> {
                 binding.title.text = getString(R.string.lock_unbound)
                 binding.subtitle.text = "微信小程序扫码，或手动输入下方配对码"
-                binding.qr.visibility = View.VISIBLE
-                binding.pairCode.visibility = View.VISIBLE
+                setBadge("未绑定", R.drawable.bg_pill, R.color.muted)
+                binding.qr.visibility = if (showPair) View.VISIBLE else View.GONE
+                binding.pairCode.visibility = if (showPair) View.VISIBLE else View.GONE
+                binding.requestButton.visibility = View.GONE
                 binding.refreshButton.visibility = View.VISIBLE
                 binding.lockNowButton.visibility = View.GONE
-                if (snap.pairToken.isNotEmpty()) showQr(snap)
+                if (showPair) showQr(snap.copy(pairToken = pairToken))
             }
             else -> {
-                binding.title.text = getString(R.string.lock_title)
-                binding.subtitle.text = getString(R.string.lock_pending)
-                binding.qr.visibility = View.GONE
-                binding.pairCode.visibility = View.GONE
-                binding.refreshButton.visibility = View.GONE
+                val pending = snap.status == "pending"
+                binding.title.text = if (pending) getString(R.string.lock_title) else getString(R.string.lock_locked)
+                binding.subtitle.text = if (showPair) {
+                    "扫码或输入配对码可绑定新家长。一次订阅只能推一条。"
+                } else if (pending) {
+                    getString(R.string.lock_pending)
+                } else {
+                    "点申请解锁通知家长，或点刷新配对码重新绑定"
+                }
+                if (pending) {
+                    setBadge("等待批准", R.drawable.bg_pill_pending, R.color.accent)
+                } else {
+                    setBadge("已锁定", R.drawable.bg_pill, R.color.muted)
+                }
+                binding.qr.visibility = if (showPair) View.VISIBLE else View.GONE
+                binding.pairCode.visibility = if (showPair) View.VISIBLE else View.GONE
+                binding.requestButton.visibility = View.VISIBLE
+                binding.requestButton.text = if (pending) "再次提醒家长" else getString(R.string.request_unlock)
+                binding.refreshButton.visibility = View.VISIBLE
                 binding.lockNowButton.visibility = View.GONE
+                if (showPair) showQr(snap.copy(pairToken = pairToken))
             }
         }
+    }
+
+    private fun rememberPair(snap: DeviceSnapshot): String {
+        if (snap.pairToken.isNotEmpty()) {
+            extraPairToken = snap.pairToken
+            extraPairExpireAt = if (snap.pairTokenExpireAt > 0) {
+                snap.pairTokenExpireAt
+            } else {
+                System.currentTimeMillis() + 10 * 60 * 1000
+            }
+        }
+        if (extraPairToken.isNotEmpty() && extraPairExpireAt <= System.currentTimeMillis()) {
+            extraPairToken = ""
+            extraPairExpireAt = 0
+        }
+        return extraPairToken
+    }
+
+    private fun setBadge(text: String, background: Int, color: Int) {
+        binding.statusBadge.text = text
+        binding.statusBadge.setBackgroundResource(background)
+        binding.statusBadge.setTextColor(getColor(color))
     }
 
     private fun showQr(snap: DeviceSnapshot) {
@@ -166,32 +224,88 @@ class LockActivity : AppCompatActivity() {
         }
     }
 
-    private fun askPin() {
-        val box = layoutInflater.inflate(R.layout.dialog_pin, null)
-        val input = box.findViewById<EditText>(R.id.pinInput)
-        AlertDialog.Builder(this)
-            .setView(box)
-            .setPositiveButton("解锁 30 分钟") { _, _ ->
-                val pin = input.text?.toString().orEmpty()
-                if (!TvLockApp.instance.prefs.verifyPin(pin)) {
-                    Toast.makeText(this, "PIN 错误", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+    private fun requestUnlock() {
+        if (requesting) return
+        requesting = true
+        binding.requestButton.isEnabled = false
+        thread {
+            try {
+                val res = client.requestUnlock()
+                val snap = client.snapshotFrom(res)
+                if (snap != null) SessionBus.post(snap)
+                val notify = res.optJSONObject("notify")
+                val skipped = notify?.optBoolean("skipped", true) ?: true
+                val reason = notify?.optString("reason").orEmpty()
+                val sent = !skipped && notifyHasSent(notify)
+                runOnUiThread {
+                    Toast.makeText(this, requestMessage(res.optBoolean("ok"), reason, sent), Toast.LENGTH_SHORT).show()
                 }
-                thread {
-                    try {
-                        val res = client.pinUnlock(30)
-                        val snap = client.snapshotFrom(res)
-                        if (snap != null) SessionBus.post(snap)
-                    } catch (e: Exception) {
-                        runOnUiThread {
-                            Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
-                        }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(this, e.message ?: "申请失败", Toast.LENGTH_SHORT).show()
+                }
+            } finally {
+                runOnUiThread {
+                    requesting = false
+                    binding.requestButton.isEnabled = true
+                }
+            }
+        }
+    }
+
+    private fun notifyHasSent(notify: JSONObject?): Boolean {
+        val results = notify?.optJSONArray("results") ?: return false
+        for (i in 0 until results.length()) {
+            if (results.optJSONObject(i)?.optBoolean("sent") == true) return true
+        }
+        return false
+    }
+
+    private fun requestMessage(ok: Boolean, reason: String, sent: Boolean): String {
+        if (!ok) return "申请失败"
+        return when {
+            sent -> "已推送给家长微信"
+            reason == "debounced" -> "刚提醒过，请稍后再试"
+            reason == "unbound" -> "请先绑定小程序"
+            reason == "still_unlocked" -> "当前已解锁"
+            reason == "wechat_not_configured" || reason == "no_real_openid" ->
+                "已申请。订阅消息需正式小程序，家长请打开小程序批准"
+            else -> "已申请，请家长打开小程序批准"
+        }
+    }
+
+    private fun askPin() {
+        val dialog = Dialog(this, R.style.Theme_TvLock_Dialog)
+        dialog.setContentView(R.layout.dialog_pin)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.86).toInt(),
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
+        val input = dialog.findViewById<EditText>(R.id.pinInput)
+        val error = dialog.findViewById<TextView>(R.id.pinError)
+        dialog.findViewById<Button>(R.id.pinCancel).setOnClickListener { dialog.dismiss() }
+        dialog.findViewById<Button>(R.id.pinConfirm).setOnClickListener {
+            val pin = input.text?.toString().orEmpty()
+            if (!TvLockApp.instance.prefs.verifyPin(pin)) {
+                error.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+            dialog.dismiss()
+            thread {
+                try {
+                    val res = client.pinUnlock(30)
+                    val snap = client.snapshotFrom(res)
+                    if (snap != null) SessionBus.post(snap)
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+        }
+        dialog.show()
         input.requestFocus()
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
     }
 
     private fun lockNow() {
@@ -202,5 +316,10 @@ class LockActivity : AppCompatActivity() {
             } catch (_: Exception) {
             }
         }
+    }
+
+    private fun shortId(id: String): String {
+        if (id.length <= 8) return id
+        return id.takeLast(8)
     }
 }

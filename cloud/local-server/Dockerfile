@@ -2,6 +2,7 @@ FROM node:20-alpine
 WORKDIR /app
 COPY cloudfunctions/api/logic.js ./cloudfunctions/api/logic.js
 COPY cloud/local-server/server.js ./cloud/local-server/server.js
+COPY cloud/local-server/wechat-notify.js ./cloud/local-server/wechat-notify.js
 RUN mkdir -p /data && chown node:node /data
 ENV NODE_ENV=production
 ENV PORT=8787

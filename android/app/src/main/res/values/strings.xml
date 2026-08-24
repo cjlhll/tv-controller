@@ -3,10 +3,19 @@
     <string name="app_name">TV Lock</string>
     <string name="lock_title">等待家长批准</string>
     <string name="lock_unbound">请用微信小程序扫码绑定</string>
-    <string name="lock_pending">设备已打开，正在等待批准</string>
+    <string name="lock_pending">已申请，等待家长在小程序批准</string>
+    <string name="lock_locked">设备已锁定</string>
     <string name="lock_unlocked">使用中</string>
-    <string name="pin_unlock">家长 PIN 解锁</string>
+    <string name="pin_unlock">家长 PIN</string>
+    <string name="request_unlock">申请解锁</string>
+    <string name="refresh_pair">刷新配对码</string>
+    <string name="lock_now">立即回锁</string>
     <string name="setup_title">初始设置</string>
     <string name="notify_channel">锁定守护</string>
     <string name="notify_text">正在守护设备锁定状态</string>
+    <string name="pin_dialog_title">家长 PIN</string>
+    <string name="pin_dialog_hint">验证后解锁 30 分钟</string>
+    <string name="pin_confirm">解锁 30 分钟</string>
+    <string name="pin_cancel">取消</string>
+    <string name="pin_error">PIN 不正确</string>
 </resources>

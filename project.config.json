@@ -27,7 +27,7 @@
     }
   },
   "compileType": "miniprogram",
-  "appid": "wx7d3b9c23e55f5c53",
+  "appid": "wx0ae9a52d7f29cc39",
   "projectname": "tv-lock",
   "libVersion": "3.5.5",
   "cloudfunctionTemplateRoot": "cloudfunctions/",

@@ -94,7 +94,6 @@ async function notifyParents(device, config) {
     return { skipped: true, reason: 'template_not_configured' }
   }
   const binds = await listBindings(device.deviceId)
-  const now = logic.formatTime(logic.nowMs())
   const page = `${config.subscribePage}?deviceId=${encodeURIComponent(device.deviceId)}`
   const results = []
   for (const b of binds) {
@@ -106,8 +105,8 @@ async function notifyParents(device, config) {
         miniprogramState: config.miniprogramState || 'developer',
         data: {
           thing1: { value: logic.clip(device.name || '设备', 20) },
-          thing2: { value: logic.clip(config.thing2 || '设备已打开，等待批准', 20) },
-          time3: { value: now },
+          thing2: { value: logic.clip(config.thing2 || '等待家长批准', 20) },
+          thing3: { value: logic.clip(config.thing3 || '请打开小程序选择时长', 20) },
         },
       })
       results.push({ openid: b.openid, sent: true })
@@ -169,18 +168,23 @@ async function handleDevice(action, payload) {
     return ok({ device: logic.publicDevice(device) })
   }
 
-  if (action === 'wake') {
-    const result = logic.applyWake(device, now)
+  if (action === 'wake' || action === 'requestUnlock') {
+    const result =
+      action === 'requestUnlock' ? logic.applyRequestUnlock(device, now) : logic.applyWake(device, now)
     await saveDevice(result.device)
     await addLog({
       deviceId: device.deviceId,
-      action: 'wake',
+      action: action === 'requestUnlock' ? 'request' : 'wake',
       detail: result.reason,
       createdAt: now,
     })
-    let notify = { skipped: true, reason: 'not_needed' }
+    let notify = { skipped: true, reason: result.reason }
     if (result.notify) {
-      notify = await notifyParents(result.device, loadConfig())
+      const cfg = loadConfig()
+      if (action === 'requestUnlock') {
+        cfg.thing2 = '孩子申请解锁，请批准'
+      }
+      notify = await notifyParents(result.device, cfg)
     }
     return ok({
       device: logic.publicDevice(result.device),
@@ -307,6 +311,7 @@ const DEVICE_ACTIONS = new Set([
   'heartbeat',
   'pinUnlock',
   'lock',
+  'requestUnlock',
 ])
 const USER_ACTIONS = new Set(['bind', 'myDevices', 'approve', 'reject', 'logs', 'setDeviceName'])
 

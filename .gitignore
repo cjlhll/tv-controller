@@ -13,6 +13,7 @@ captures/
 # Node / 云开发
 node_modules/
 cloud/local-server/data.json
+cloud/local-server/.env
 cloudfunctions/**/node_modules/
 
 # WeChat
