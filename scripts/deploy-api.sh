@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HOST="${TVLOCK_HOST:-root@192.168.1.2}"
 REMOTE_DIR="${TVLOCK_REMOTE_DIR:-/opt/tvlock}"
 
-ssh -o BatchMode=yes -o ConnectTimeout=8 "$HOST" "mkdir -p '$REMOTE_DIR/cloud/local-server' '$REMOTE_DIR/cloudfunctions/api' '$REMOTE_DIR/data'"
+ssh -o BatchMode=yes -o ConnectTimeout=8 "$HOST" "mkdir -p '$REMOTE_DIR/cloud/local-server' '$REMOTE_DIR/cloudfunctions/api' '$REMOTE_DIR/data' '$REMOTE_DIR/certs'"
 
 rsync -az --delete \
   "$ROOT/cloudfunctions/api/logic.js" \
@@ -16,6 +16,7 @@ rsync -az \
   "$ROOT/cloud/local-server/wechat-notify.js" \
   "$ROOT/cloud/local-server/Dockerfile" \
   "$ROOT/cloud/local-server/docker-compose.yml" \
+  "$ROOT/cloud/local-server/Caddyfile" \
   "$HOST:$REMOTE_DIR/cloud/local-server/"
 
 if [[ -f "$ROOT/cloud/local-server/.env" ]]; then

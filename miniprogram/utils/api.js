@@ -19,7 +19,7 @@ function request(action, data) {
         resolve(body)
       },
       fail(err) {
-        reject(new Error((err && err.errMsg) || '连不上 API，请确认 http://op.caojian.shop:8787 可访问'))
+        reject(new Error((err && err.errMsg) || '连不上 API，请确认 https://armbian.caojian.shop:8787 可访问'))
       },
     })
   })

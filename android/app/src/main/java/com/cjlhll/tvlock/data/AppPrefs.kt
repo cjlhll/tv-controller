@@ -63,11 +63,17 @@ class AppPrefs(context: Context) {
     }
 
     companion object {
-        const val DEFAULT_SERVER = "http://op.caojian.shop:8787/api"
+        const val DEFAULT_SERVER = "https://armbian.caojian.shop:8787/api"
 
         fun canonicalizeServerUrl(url: String): String {
             if (url.isEmpty()) return DEFAULT_SERVER
-            if (url.contains("127.0.0.1") || url.contains("localhost") || url.contains("192.168.1.2")) {
+            if (
+                url.contains("127.0.0.1") ||
+                url.contains("localhost") ||
+                url.contains("192.168.1.2") ||
+                url.contains("op.caojian.shop") ||
+                url.contains("http://armbian.caojian.shop")
+            ) {
                 return DEFAULT_SERVER
             }
             return url

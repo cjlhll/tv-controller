@@ -1,0 +1,9 @@
+{
+	auto_https off
+}
+
+https://armbian.caojian.shop:8787 {
+	tls /certs/fullchain.cer /certs/key.pem
+	encode gzip
+	reverse_proxy api:8787
+}

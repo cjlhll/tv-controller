@@ -15,9 +15,9 @@ node cloudfunctions/api/logic.test.js
 node cloud/local-server/server.js
 ```
 
-- API：`POST http://op.caojian.shop:8787/api`（Docker 在 `192.168.1.2`，`./scripts/deploy-api.sh`）
-- 审批页：http://op.caojian.shop:8787/
-- 健康检查：http://op.caojian.shop:8787/health
+- API：`POST https://armbian.caojian.shop:8787/api`（Docker 在 `192.168.1.2`，Caddy 终结 TLS，`./scripts/deploy-api.sh`）
+- 审批页：https://armbian.caojian.shop:8787/
+- 健康检查：https://armbian.caojian.shop:8787/health
 
 手机 USB 在 **Windows** 上，WSL2 看不到这台设备。用 Windows 的 `adb.exe`：
 
@@ -53,7 +53,7 @@ cd android
 
 首次在测试机打开应用：
 
-1. 填服务器：`http://op.caojian.shop:8787/api`（已装过的测试机若还是本机/内网 IP，长按锁屏标题改回来）
+1. 填服务器：`https://armbian.caojian.shop:8787/api`（已装过的测试机若还是 `op.caojian.shop` / 本机/内网 IP，长按锁屏标题改回来）
 2. 设 4–6 位家长 PIN
 3. 授予「显示在其他应用上层」
 4. 忽略电池优化
