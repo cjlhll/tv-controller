@@ -3,7 +3,7 @@
 const https = require('https')
 const logic = require('../../cloudfunctions/api/logic')
 
-const DEFAULT_TEMPLATE_ID = 'fx5fNlSC6_wEfd9ub-bqwbOH9EC8MVIHPK29WSaU-oE'
+const DEFAULT_TEMPLATE_ID = '0FiHP-u3-tnliKxfAEg_22HXQ17NAdR-dPHsWmUIknQ'
 
 let tokenCache = { token: '', expireAt: 0 }
 
@@ -87,13 +87,34 @@ async function getAccessToken(appid, secret) {
   return tokenCache.token
 }
 
+function formatSubscribeTime(ts) {
+  const d = new Date(ts || Date.now())
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      hourCycle: 'h23',
+    })
+      .formatToParts(d)
+      .map((p) => [p.type, p.value])
+  )
+  return `${parts.year}年${parts.month}月${parts.day}日 ${parts.hour}:${parts.minute}`
+}
+
 function fieldsFor(kind, device, minutes) {
   const name = logic.clip(device.name || '设备', 20)
+  const now = logic.nowMs()
   if (kind === 'approve') {
     return {
       thing1: name,
       thing2: logic.clip(`已批准 ${minutes || 0} 分钟`, 20),
       thing3: '到期将自动回锁',
+      time4: formatSubscribeTime(device.unlockUntil || now),
     }
   }
   if (kind === 'request') {
@@ -101,12 +122,14 @@ function fieldsFor(kind, device, minutes) {
       thing1: name,
       thing2: '等待家长批准',
       thing3: '请打开小程序选择时长',
+      time4: formatSubscribeTime(now),
     }
   }
   return {
     thing1: name,
-    thing2: '设备已打开',
-    thing3: '请打开小程序批准解锁',
+    thing2: '设备已打开待批准',
+    thing3: '请打开小程序选择时长',
+    time4: formatSubscribeTime(device.lastWakeAt || now),
   }
 }
 
@@ -149,12 +172,14 @@ async function notifyParents(device, bindings, fields) {
             thing1: { value: logic.clip(dataFields.thing1, 20) },
             thing2: { value: logic.clip(dataFields.thing2, 20) },
             thing3: { value: logic.clip(dataFields.thing3, 20) },
+            time4: { value: dataFields.time4 || formatSubscribeTime() },
           },
         }
       )
       results.push({
         openid: touser,
         sent: data.errcode === 0,
+        errcode: data.errcode,
         message: data.errmsg || '',
       })
     } catch (err) {

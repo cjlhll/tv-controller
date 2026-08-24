@@ -30,6 +30,7 @@ Page({
       fabOpen: false,
       canSubscribe: !!(env.subscribeTemplateId && !env.subscribeTemplateId.startsWith('YOUR_')),
     })
+    this.ensureSubscribe()
     this.refresh()
   },
   onPullDownRefresh() {
@@ -62,11 +63,16 @@ Page({
   },
   goApprove(e) {
     const id = e.currentTarget.dataset.id
+    this.ensureSubscribe()
     wx.navigateTo({ url: `/pages/approve/approve?deviceId=${id}` })
   },
   goLogs(e) {
     const id = e.currentTarget.dataset.id
     wx.navigateTo({ url: `/pages/logs/logs?deviceId=${id}` })
+  },
+  ensureSubscribe() {
+    if (!env.subscribeTemplateId || env.subscribeTemplateId.startsWith('YOUR_')) return
+    wx.requestSubscribeMessage({ tmplIds: [env.subscribeTemplateId] })
   },
   subscribe() {
     if (!env.subscribeTemplateId || env.subscribeTemplateId.startsWith('YOUR_')) {

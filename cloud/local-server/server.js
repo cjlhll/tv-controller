@@ -131,6 +131,22 @@ async function notifyIfNeeded(db, device, shouldNotify, reason, kind, minutes) {
   }
 }
 
+function summarizeNotify(notify) {
+  if (!notify || notify.skipped) return notify
+  const results = notify.results || []
+  if (results.some((r) => r.sent)) return Object.assign({}, notify, { reason: 'sent' })
+  const first = results[0] || {}
+  const msg = String(first.message || notify.error || '')
+  const code = first.errcode
+  if (code === 43101 || /user refuse|43101/i.test(msg)) {
+    return Object.assign({}, notify, { reason: 'need_subscribe' })
+  }
+  if (code === 40037 || /invalid template/i.test(msg)) {
+    return Object.assign({}, notify, { reason: 'bad_template' })
+  }
+  return Object.assign({}, notify, { reason: msg || 'send_failed' })
+}
+
 function handleDevice(db, action, payload) {
   const now = logic.nowMs()
   if (action === 'register') {
@@ -217,7 +233,7 @@ function handleDevice(db, action, payload) {
     ).then((notify) =>
       ok({
         device: logic.publicDevice(result.device, now, { includeCommand: true }),
-        notify,
+        notify: summarizeNotify(notify),
       })
     )
   }
@@ -295,9 +311,7 @@ function handleUser(db, action, payload) {
       durationMin: minutes,
       createdAt: now,
     })
-    return notifyIfNeeded(db, unlocked, true, 'approved', 'approve', minutes).then((notify) =>
-      ok({ device: logic.publicDevice(unlocked), minutes, notify })
-    )
+    return ok({ device: logic.publicDevice(unlocked), minutes })
   }
   if (action === 'reject') {
     logic.applyReject(device, now)

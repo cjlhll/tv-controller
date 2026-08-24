@@ -3,5 +3,5 @@ module.exports = {
   useLocalApi: true,
   localApiUrl: 'https://armbian.caojian.shop:8787/api',
   cloudEnv: 'YOUR_CLOUD_ENV_ID',
-  subscribeTemplateId: 'fx5fNlSC6_wEfd9ub-bqwbOH9EC8MVIHPK29WSaU-oE',
+  subscribeTemplateId: '0FiHP-u3-tnliKxfAEg_22HXQ17NAdR-dPHsWmUIknQ',
 }

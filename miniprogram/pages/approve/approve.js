@@ -132,28 +132,21 @@ Page({
       wx.showToast({ title: '时长无效', icon: 'none' })
       return
     }
-    const run = () => {
-      wx.showLoading({ title: '批准中' })
-      api
-        .call('approve', { deviceId: this.data.deviceId, durationMin })
-        .then((res) => {
-          wx.hideLoading()
-          wx.showToast({ title: `已批准 ${durationMin} 分钟` })
-          this.applyDevice(res.device, res.now, res.minutes || durationMin)
-        })
-        .catch((err) => {
-          wx.hideLoading()
-          wx.showToast({ title: err.message, icon: 'none' })
-        })
-    }
-    if (env.subscribeTemplateId && !env.subscribeTemplateId.startsWith('YOUR_')) {
-      wx.requestSubscribeMessage({
-        tmplIds: [env.subscribeTemplateId],
-        complete: run,
+    wx.showLoading({ title: '批准中' })
+    api
+      .call('approve', { deviceId: this.data.deviceId, durationMin })
+      .then((res) => {
+        wx.hideLoading()
+        wx.showToast({ title: `已批准 ${durationMin} 分钟` })
+        this.applyDevice(res.device, res.now, res.minutes || durationMin)
+        if (env.subscribeTemplateId && !env.subscribeTemplateId.startsWith('YOUR_')) {
+          wx.requestSubscribeMessage({ tmplIds: [env.subscribeTemplateId] })
+        }
       })
-    } else {
-      run()
-    }
+      .catch((err) => {
+        wx.hideLoading()
+        wx.showToast({ title: err.message, icon: 'none' })
+      })
   },
   reject() {
     wx.showLoading({ title: '处理中' })

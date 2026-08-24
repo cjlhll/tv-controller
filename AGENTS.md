@@ -182,7 +182,7 @@ curl -sS -X POST https://armbian.caojian.shop:8787/api \
 - 同步到 Windows 副本后再让用户编译；不要只改 WSL 就声称「小程序已更新」。
 - 不要提交 `cloud/local-server/data.json`、`android/local.properties`、密钥、PIN 明文到公共远程（PIN `2468` 仅本机测试）。
 - 索尼适配：横屏 / `values-television` / 遥控器焦点 / `DREAMING_STOPPED` / Leanback，不要另起一个 APK。
-- 订阅消息：正式 AppID + `.env` 里的 `WECHAT_APPID` / `WECHAT_SECRET` + 模板 `SUBSCRIBE_TEMPLATE_ID`。家长先 `requestSubscribeMessage`，孩子再 `requestUnlock` / `wake`。不要把 AppSecret 写进仓库或小程序。详见 `docs/setup.md` 4.1。
+- 订阅消息：正式 AppID + `.env` 里的 `WECHAT_APPID` / `WECHAT_SECRET` + 模板 `SUBSCRIBE_TEMPLATE_ID`。家长先 `requestSubscribeMessage`，孩子再 `requestUnlock` / `wake`（申请时推送；批准成功不再推送）。不要把 AppSecret 写进仓库或小程序。详见 `docs/setup.md` 4.1。
 
 ---
 

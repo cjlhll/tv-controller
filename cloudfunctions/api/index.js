@@ -18,6 +18,25 @@ function loadConfig() {
   return cfg
 }
 
+function formatSubscribeTime(ts) {
+  const d = new Date(ts || Date.now())
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      hourCycle: 'h23',
+    })
+      .formatToParts(d)
+      .map((p) => [p.type, p.value])
+  )
+  return `${parts.year}年${parts.month}月${parts.day}日 ${parts.hour}:${parts.minute}`
+}
+
 function normalizeEvent(event) {
   if (!event) return {}
   if (event.httpMethod || event.requestContext || event.path) {
@@ -107,6 +126,7 @@ async function notifyParents(device, config) {
           thing1: { value: logic.clip(device.name || '设备', 20) },
           thing2: { value: logic.clip(config.thing2 || '等待家长批准', 20) },
           thing3: { value: logic.clip(config.thing3 || '请打开小程序选择时长', 20) },
+          time4: { value: config.time4 || formatSubscribeTime() },
         },
       })
       results.push({ openid: b.openid, sent: true })

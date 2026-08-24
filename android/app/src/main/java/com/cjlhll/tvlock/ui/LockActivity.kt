@@ -32,6 +32,8 @@ class LockActivity : AppCompatActivity() {
     private var lastToken: String = ""
     private var extraPairToken: String = ""
     private var extraPairExpireAt: Long = 0
+    private var keepPairVisible = false
+    private var pairRefreshing = false
     private var requesting = false
     private var didFocusAction = false
 
@@ -212,10 +214,16 @@ class LockActivity : AppCompatActivity() {
             } else {
                 System.currentTimeMillis() + 10 * 60 * 1000
             }
-        }
-        if (extraPairToken.isNotEmpty() && extraPairExpireAt <= System.currentTimeMillis()) {
+            keepPairVisible = true
+        } else if (keepPairVisible && extraPairToken.isNotEmpty() && snap.boundCount > 0) {
             extraPairToken = ""
             extraPairExpireAt = 0
+            lastToken = ""
+            refreshPair()
+        }
+        val remaining = extraPairExpireAt - System.currentTimeMillis()
+        if (keepPairVisible && (extraPairToken.isEmpty() || remaining <= 20_000L)) {
+            refreshPair()
         }
         return extraPairToken
     }
@@ -272,6 +280,8 @@ class LockActivity : AppCompatActivity() {
     }
 
     private fun refreshPair() {
+        if (pairRefreshing) return
+        pairRefreshing = true
         thread {
             try {
                 var res = if (TvLockApp.instance.prefs.deviceId.isEmpty()) {
@@ -281,11 +291,14 @@ class LockActivity : AppCompatActivity() {
                 }
                 if (!res.optBoolean("ok")) res = client.register()
                 val snap = client.snapshotFrom(res) ?: return@thread
+                keepPairVisible = snap.pairToken.isNotEmpty()
                 SessionBus.post(snap)
             } catch (e: Exception) {
                 runOnUiThread {
                     Toast.makeText(this, "刷新失败：${e.message}", Toast.LENGTH_SHORT).show()
                 }
+            } finally {
+                pairRefreshing = false
             }
         }
     }
@@ -334,6 +347,7 @@ class LockActivity : AppCompatActivity() {
             reason == "debounced" -> "刚提醒过，请稍后再试"
             reason == "unbound" -> "请先绑定小程序"
             reason == "still_unlocked" -> "当前已解锁"
+            reason == "need_subscribe" -> "已申请。家长请先打开小程序点接收提醒"
             reason == "wechat_not_configured" || reason == "no_real_openid" ->
                 "已申请。订阅消息需正式小程序，家长请打开小程序批准"
             else -> "已申请，请家长打开小程序批准"

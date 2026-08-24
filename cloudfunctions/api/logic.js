@@ -160,9 +160,8 @@ function applyRequestUnlock(device, now) {
   }
   device.status = 'pending'
   device.unlockUntil = 0
-  const notify = now - (device.lastNotifyAt || 0) >= REQUEST_NOTIFY_DEBOUNCE_MS
-  if (notify) device.lastNotifyAt = now
-  return { device, notify, reason: notify ? 'requested' : 'debounced' }
+  device.lastRequestNotifyAt = now
+  return { device, notify: true, reason: 'requested' }
 }
 
 function applyApprove(device, durationMin, now) {

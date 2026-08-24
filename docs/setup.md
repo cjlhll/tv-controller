@@ -94,7 +94,7 @@ adb.exe shell dpm remove-active-admin com.cjlhll.tvlock/.lock.LockAdminReceiver
    - 云函数 [`cloudfunctions/api/config.json`](../cloudfunctions/api/config.json) 的模板 ID
 4. 上传并部署云函数 `api`（在函数目录执行 `npm install` 后再上传）。
 5. 控制台创建集合：`devices`、`bindings`、`logs`。权限先用「仅创建者可读写」不够，因为设备端走 HTTP、云函数用管理员权限写库；集合权限建议「仅云函数可写」，或开发阶段「所有用户可读，仅云函数可写」。
-6. 订阅消息：已选用模板「解锁结果通知」`fx5fNlSC6_wEfd9ub-bqwbOH9EC8MVIHPK29WSaU-oE`，字段 `thing1` 解锁名称、`thing2` 解锁结果、`thing3` 温馨提示。
+6. 订阅消息：已选用模板「解锁进度通知」`0FiHP-u3-tnliKxfAEg_22HXQ17NAdR-dPHsWmUIknQ`，字段 `thing1` 解锁名称、`thing2` 活动进度、`thing3` 温馨提示、`time4` 解锁时间。
 7. 为云函数开通 **HTTP 访问**，把得到的 URL 填进 APK 设置里的服务器地址（POST JSON，`action` 字段与本机 API 相同）。
 
 绑定后、每次批准结束时，小程序会再拉一次订阅，方便接收下一次「设备已打开」。
@@ -103,7 +103,7 @@ adb.exe shell dpm remove-active-admin com.cjlhll.tvlock/.lock.LockAdminReceiver
 
 ## 4.1 如何申请小程序订阅消息（推送到家长微信）
 
-正式号 `wx0ae9a52d7f29cc39` 已接入。模板「解锁结果通知」`fx5fNlSC6_wEfd9ub-bqwbOH9EC8MVIHPK29WSaU-oE` 字段为 `thing1` / `thing2` / `thing3`。AppSecret 只放 `cloud/local-server/.env`（已 gitignore），部署到 `192.168.1.2:/opt/tvlock/cloud/local-server/.env`。
+正式号 `wx0ae9a52d7f29cc39` 已接入。模板「解锁进度通知」`0FiHP-u3-tnliKxfAEg_22HXQ17NAdR-dPHsWmUIknQ` 字段为 `thing1` / `thing2` / `thing3` / `time4`。AppSecret 只放 `cloud/local-server/.env`（已 gitignore），部署到 `192.168.1.2:/opt/tvlock/cloud/local-server/.env`。
 
 发送条件：
 

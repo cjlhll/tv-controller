@@ -48,14 +48,14 @@ const wakeSoon = logic.applyWake(device, now + 2000)
 assert.equal(wakeSoon.notify, false)
 assert.equal(wakeSoon.reason, 'debounced')
 
-const requested = logic.applyRequestUnlock(device, now + 20000)
+const requested = logic.applyRequestUnlock(device, now + 2500)
 assert.equal(requested.device.status, 'pending')
 assert.equal(requested.notify, true)
 assert.equal(requested.reason, 'requested')
 
-const requestSoon = logic.applyRequestUnlock(device, now + 25000)
-assert.equal(requestSoon.notify, false)
-assert.equal(requestSoon.reason, 'debounced')
+const requestAgain = logic.applyRequestUnlock(device, now + 4000)
+assert.equal(requestAgain.notify, true)
+assert.equal(requestAgain.reason, 'requested')
 
 const approved = logic.applyApprove(device, 15, now + 3000)
 assert.equal(approved.device.status, 'unlocked')
