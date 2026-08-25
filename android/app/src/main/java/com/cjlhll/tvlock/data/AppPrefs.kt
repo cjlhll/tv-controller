@@ -41,6 +41,18 @@ class AppPrefs(context: Context) {
         get() = sp.getBoolean("homeRoleAsked", false)
         set(value) { sp.edit().putBoolean("homeRoleAsked", value).apply() }
 
+    var pairKeepVisible: Boolean
+        get() = sp.getBoolean("pairKeepVisible", false)
+        set(value) { sp.edit().putBoolean("pairKeepVisible", value).apply() }
+
+    var cachedPairToken: String
+        get() = sp.getString("cachedPairToken", "") ?: ""
+        set(value) { sp.edit().putString("cachedPairToken", value).apply() }
+
+    var cachedPairExpireAt: Long
+        get() = sp.getLong("cachedPairExpireAt", 0L)
+        set(value) { sp.edit().putLong("cachedPairExpireAt", value).apply() }
+
     val pinSalt: String
         get() {
             val existing = sp.getString("pinSalt", "")

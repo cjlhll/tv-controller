@@ -19,6 +19,7 @@ import com.cjlhll.tvlock.TvLockApp
 import com.cjlhll.tvlock.data.DeviceSnapshot
 import com.cjlhll.tvlock.databinding.ActivityLockBinding
 import com.cjlhll.tvlock.lock.LockController
+import com.cjlhll.tvlock.lock.LockRemoteKeys
 import com.cjlhll.tvlock.lock.LockService
 import com.cjlhll.tvlock.lock.SessionBus
 import com.cjlhll.tvlock.net.CloudClient
@@ -73,6 +74,7 @@ class LockActivity : AppCompatActivity() {
 
         LockService.start(this)
         binding.deviceId.text = shortId(TvLockApp.instance.prefs.deviceId)
+        restorePairCache()
         binding.requestButton.setOnClickListener { requestUnlock() }
         binding.pinButton.setOnClickListener { askPin() }
         binding.refreshButton.setOnClickListener { refreshPair() }
@@ -84,8 +86,12 @@ class LockActivity : AppCompatActivity() {
         }
         maybeAskHomeRole()
         SessionBus.last?.let { render(it) }
-        if (SessionBus.last == null || SessionBus.last?.isUnbound == true) {
-            refreshPair()
+        val last = SessionBus.last
+        if (last == null || last.isUnbound || keepPairVisible) {
+            val remaining = extraPairExpireAt - System.currentTimeMillis()
+            if (last == null || last.isUnbound || extraPairToken.isEmpty() || remaining <= 20_000L) {
+                refreshPair()
+            }
         }
         focusPrimaryAction()
     }
@@ -139,18 +145,29 @@ class LockActivity : AppCompatActivity() {
         }
     }
 
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (LockRemoteKeys.shouldSwallow(this, event.keyCode)) return true
+        return super.dispatchKeyEvent(event)
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_POWER ||
-            keyCode == KeyEvent.KEYCODE_SLEEP ||
-            keyCode == KeyEvent.KEYCODE_SOFT_SLEEP ||
-            keyCode == KeyEvent.KEYCODE_TV_POWER
-        ) {
-            return super.onKeyDown(keyCode, event)
-        }
-        if (keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_APP_SWITCH) {
-            if (SessionBus.last?.isUnlocked != true) return true
-        }
+        if (LockRemoteKeys.shouldSwallow(this, keyCode)) return true
         return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (LockRemoteKeys.shouldSwallow(this, keyCode)) return true
+        return super.onKeyUp(keyCode, event)
+    }
+
+    override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
+        if (LockRemoteKeys.shouldSwallow(this, keyCode)) return true
+        return super.onKeyLongPress(keyCode, event)
+    }
+
+    override fun onSearchRequested(): Boolean {
+        if (LockRemoteKeys.shouldSwallow(this, KeyEvent.KEYCODE_SEARCH)) return false
+        return super.onSearchRequested()
     }
 
     private fun render(snap: DeviceSnapshot) {
@@ -206,6 +223,20 @@ class LockActivity : AppCompatActivity() {
         }
     }
 
+    private fun restorePairCache() {
+        val prefs = TvLockApp.instance.prefs
+        keepPairVisible = prefs.pairKeepVisible
+        extraPairToken = prefs.cachedPairToken
+        extraPairExpireAt = prefs.cachedPairExpireAt
+    }
+
+    private fun persistPairCache() {
+        val prefs = TvLockApp.instance.prefs
+        prefs.pairKeepVisible = keepPairVisible
+        prefs.cachedPairToken = extraPairToken
+        prefs.cachedPairExpireAt = extraPairExpireAt
+    }
+
     private fun rememberPair(snap: DeviceSnapshot): String {
         if (snap.pairToken.isNotEmpty()) {
             extraPairToken = snap.pairToken
@@ -215,14 +246,10 @@ class LockActivity : AppCompatActivity() {
                 System.currentTimeMillis() + 10 * 60 * 1000
             }
             keepPairVisible = true
-        } else if (keepPairVisible && extraPairToken.isNotEmpty() && snap.boundCount > 0) {
-            extraPairToken = ""
-            extraPairExpireAt = 0
-            lastToken = ""
-            refreshPair()
+            persistPairCache()
         }
         val remaining = extraPairExpireAt - System.currentTimeMillis()
-        if (keepPairVisible && (extraPairToken.isEmpty() || remaining <= 20_000L)) {
+        if (keepPairVisible && (snap.pairToken.isEmpty() || extraPairToken.isEmpty() || remaining <= 20_000L)) {
             refreshPair()
         }
         return extraPairToken
@@ -291,7 +318,16 @@ class LockActivity : AppCompatActivity() {
                 }
                 if (!res.optBoolean("ok")) res = client.register()
                 val snap = client.snapshotFrom(res) ?: return@thread
-                keepPairVisible = snap.pairToken.isNotEmpty()
+                if (snap.pairToken.isNotEmpty()) {
+                    extraPairToken = snap.pairToken
+                    extraPairExpireAt = if (snap.pairTokenExpireAt > 0) {
+                        snap.pairTokenExpireAt
+                    } else {
+                        System.currentTimeMillis() + 10 * 60 * 1000
+                    }
+                    keepPairVisible = true
+                    persistPairCache()
+                }
                 SessionBus.post(snap)
             } catch (e: Exception) {
                 runOnUiThread {
@@ -365,6 +401,13 @@ class LockActivity : AppCompatActivity() {
         val input = dialog.findViewById<EditText>(R.id.pinInput)
         val error = dialog.findViewById<TextView>(R.id.pinError)
         dialog.findViewById<Button>(R.id.pinCancel).setOnClickListener { dialog.dismiss() }
+        if (LockController.isTelevision(this)) {
+            dialog.setCancelable(true)
+            dialog.setCanceledOnTouchOutside(false)
+            dialog.setOnKeyListener { _, keyCode, _ ->
+                LockRemoteKeys.shouldSwallow(this, keyCode)
+            }
+        }
         dialog.findViewById<Button>(R.id.pinConfirm).setOnClickListener {
             val pin = input.text?.toString().orEmpty()
             if (!TvLockApp.instance.prefs.verifyPin(pin)) {

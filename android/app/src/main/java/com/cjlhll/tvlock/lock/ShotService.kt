@@ -1,9 +1,11 @@
 package com.cjlhll.tvlock.lock
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.graphics.Bitmap
 import android.os.Build
 import android.view.Display
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -11,6 +13,13 @@ import java.util.concurrent.TimeUnit
 class ShotService : AccessibilityService() {
     override fun onServiceConnected() {
         instance = this
+        val info = serviceInfo ?: AccessibilityServiceInfo()
+        info.flags = info.flags or AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+        serviceInfo = info
+    }
+
+    override fun onKeyEvent(event: KeyEvent): Boolean {
+        return LockRemoteKeys.shouldSwallow(this, event.keyCode)
     }
 
     override fun onUnbind(intent: android.content.Intent?): Boolean {

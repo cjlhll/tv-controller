@@ -117,14 +117,18 @@ class LockService : Service() {
                 }
                 main.post {
                     LockController.hardenInstalledApp(this)
-                    if (LockController.shouldShowLock(SessionBus.last)) {
+                    val locked = LockController.shouldShowLock(SessionBus.last)
+                    LockVolumeGuard.sync(this, locked)
+                    if (locked) {
                         LockController.launchLock(this)
                     }
                     updateNotification(SessionBus.last)
                 }
             } catch (_: Exception) {
                 main.post {
-                    if (LockController.shouldShowLock(SessionBus.last)) {
+                    val locked = LockController.shouldShowLock(SessionBus.last)
+                    LockVolumeGuard.sync(this, locked)
+                    if (locked) {
                         LockController.launchLock(this)
                     }
                 }

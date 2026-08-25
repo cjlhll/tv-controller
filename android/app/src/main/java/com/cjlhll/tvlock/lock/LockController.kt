@@ -52,7 +52,14 @@ object LockController {
     fun prepareLockTask(context: Context) {
         if (!isDeviceOwner(context)) return
         val dpm = context.getSystemService(DevicePolicyManager::class.java)
-        dpm.setLockTaskPackages(adminComponent(context), arrayOf(context.packageName))
+        val admin = adminComponent(context)
+        dpm.setLockTaskPackages(admin, arrayOf(context.packageName))
+        if (isTelevision(context) && Build.VERSION.SDK_INT >= 28) {
+            try {
+                dpm.setLockTaskFeatures(admin, DevicePolicyManager.LOCK_TASK_FEATURE_NONE)
+            } catch (_: Exception) {
+            }
+        }
     }
 
     fun startLockTaskSafe(activity: Activity) {
@@ -80,9 +87,11 @@ object LockController {
     fun applyLocked(activity: Activity) {
         setTvHomeEnabled(activity, true)
         startLockTaskSafe(activity)
+        LockVolumeGuard.sync(activity, true)
     }
 
     fun applyUnlocked(activity: Activity) {
+        LockVolumeGuard.sync(activity, false)
         setTvHomeEnabled(activity, false)
         stopLockTaskSafe(activity)
         launchOtherHome(activity)
