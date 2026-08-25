@@ -14,7 +14,7 @@ services:
       WECHAT_APPID: ${WECHAT_APPID:-}
       WECHAT_SECRET: ${WECHAT_SECRET:-}
       SUBSCRIBE_TEMPLATE_ID: ${SUBSCRIBE_TEMPLATE_ID:-0FiHP-u3-tnliKxfAEg_22HXQ17NAdR-dPHsWmUIknQ}
-      MINIPROGRAM_STATE: ${MINIPROGRAM_STATE:-developer}
+      MINIPROGRAM_STATE: ${MINIPROGRAM_STATE:-formal}
       TZ: Asia/Shanghai
     volumes:
       - /opt/tvlock/data:/data

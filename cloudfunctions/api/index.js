@@ -121,7 +121,7 @@ async function notifyParents(device, config) {
         touser: b.openid,
         templateId: tmplId,
         page,
-        miniprogramState: config.miniprogramState || 'developer',
+        miniprogramState: config.miniprogramState || 'formal',
         data: {
           thing1: { value: logic.clip(device.name || '设备', 20) },
           thing2: { value: logic.clip(config.thing2 || '等待家长批准', 20) },

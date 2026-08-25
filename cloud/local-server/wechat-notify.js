@@ -166,7 +166,7 @@ async function notifyParents(device, bindings, fields) {
           touser,
           template_id: templateId,
           page,
-          miniprogram_state: process.env.MINIPROGRAM_STATE || 'developer',
+          miniprogram_state: process.env.MINIPROGRAM_STATE || 'formal',
           lang: 'zh_CN',
           data: {
             thing1: { value: logic.clip(dataFields.thing1, 20) },
