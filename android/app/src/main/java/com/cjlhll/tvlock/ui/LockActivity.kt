@@ -5,6 +5,8 @@ import android.app.role.RoleManager
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -37,10 +39,13 @@ class LockActivity : AppCompatActivity() {
     private var pairRefreshing = false
     private var requesting = false
     private var didFocusAction = false
+    private val idleSleep = Handler(Looper.getMainLooper())
+    private val idleSleepRunnable = Runnable { goIdleSleep() }
 
     private val listener: (DeviceSnapshot) -> Unit = { snap ->
         render(snap)
         if (snap.isUnlocked) {
+            cancelIdleSleep()
             LockController.applyUnlocked(this)
             finish()
         } else {
@@ -110,13 +115,21 @@ class LockActivity : AppCompatActivity() {
         SessionBus.listen(listener)
         SessionBus.last?.let {
             if (it.isUnlocked) {
+                cancelIdleSleep()
                 LockController.applyUnlocked(this)
                 finish()
             } else {
                 LockController.applyLocked(this)
             }
         }
+        restoreStayAwake()
+        scheduleIdleSleep()
         focusPrimaryAction()
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        scheduleIdleSleep()
     }
 
     override fun onUserLeaveHint() {
@@ -128,12 +141,14 @@ class LockActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
+        cancelIdleSleep()
         LockController.lockForeground = false
         if (::binding.isInitialized) SessionBus.unlisten(listener)
         super.onPause()
     }
 
     override fun onDestroy() {
+        cancelIdleSleep()
         if (LockController.lockActivity === this) LockController.lockActivity = null
         super.onDestroy()
     }
@@ -445,5 +460,41 @@ class LockActivity : AppCompatActivity() {
     private fun shortId(id: String): String {
         if (id.length <= 8) return id
         return id.takeLast(8)
+    }
+
+    private fun scheduleIdleSleep() {
+        idleSleep.removeCallbacks(idleSleepRunnable)
+        if (!LockController.shouldShowLock(SessionBus.last)) return
+        idleSleep.postDelayed(idleSleepRunnable, IDLE_SLEEP_MS)
+    }
+
+    private fun cancelIdleSleep() {
+        idleSleep.removeCallbacks(idleSleepRunnable)
+    }
+
+    private fun restoreStayAwake() {
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
+        if (!LockController.isTelevision(this)) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    private fun goIdleSleep() {
+        if (!LockController.shouldShowLock(SessionBus.last)) return
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (Build.VERSION.SDK_INT >= 27) {
+            setTurnScreenOn(false)
+        }
+        if (!LockController.sleepDevice(this)) {
+            restoreStayAwake()
+            scheduleIdleSleep()
+        }
+    }
+
+    companion object {
+        private const val IDLE_SLEEP_MS = 10 * 60 * 1000L
     }
 }

@@ -11,9 +11,7 @@ class WakeReceiver : BroadcastReceiver() {
             Intent.ACTION_DREAMING_STARTED,
             -> {
                 DeviceCommands.rememberLockedFrame()
-                if (LockController.isTelevision(context)) {
-                    LockController.tvStandby = true
-                }
+                LockController.tvStandby = true
             }
             Intent.ACTION_SCREEN_ON,
             Intent.ACTION_DREAMING_STOPPED,

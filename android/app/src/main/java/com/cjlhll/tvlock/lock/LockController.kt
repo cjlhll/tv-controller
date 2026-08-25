@@ -181,14 +181,25 @@ object LockController {
 
     fun sleepDevice(context: Context): Boolean {
         tvStandby = true
-        if (ShotService.lockScreen()) return true
-        if (isDeviceOwner(context)) {
-            try {
-                context.getSystemService(DevicePolicyManager::class.java).lockNow()
-                return true
-            } catch (_: Exception) {
-            }
+        val slept = ShotService.lockScreen() || lockNowSafe(context) || goToSleepSafe(context)
+        if (!slept) {
+            val pm = context.getSystemService(PowerManager::class.java)
+            if (pm.isInteractive) tvStandby = false
         }
+        return slept
+    }
+
+    private fun lockNowSafe(context: Context): Boolean {
+        if (!isDeviceOwner(context)) return false
+        return try {
+            context.getSystemService(DevicePolicyManager::class.java).lockNow()
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun goToSleepSafe(context: Context): Boolean {
         return try {
             val pm = context.getSystemService(PowerManager::class.java)
             val method = PowerManager::class.java.getMethod("goToSleep", Long::class.javaPrimitiveType)
@@ -200,7 +211,6 @@ object LockController {
     }
 
     fun canLaunchLock(context: Context): Boolean {
-        if (!isTelevision(context)) return true
         if (tvStandby) return false
         val pm = context.getSystemService(PowerManager::class.java)
         return pm.isInteractive
