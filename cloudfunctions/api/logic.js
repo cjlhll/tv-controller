@@ -7,7 +7,7 @@ const WAKE_NOTIFY_DEBOUNCE_MS = 60 * 1000
 const REQUEST_NOTIFY_DEBOUNCE_MS = 15 * 1000
 const DEFAULT_PIN_DURATION_MIN = 30
 const COMMAND_TTL_MS = 90 * 1000
-const ALLOWED_COMMANDS = new Set(['screenshot'])
+const ALLOWED_COMMANDS = new Set(['screenshot', 'sleep'])
 
 function nowMs() {
   return Date.now()
@@ -188,6 +188,11 @@ function applyLock(device, now) {
   return device
 }
 
+function applyRemoteLock(device, now) {
+  applyLock(device, now)
+  return applyCommand(device, 'sleep', now)
+}
+
 function applyBind(device, now) {
   if (!device.pairToken || now > (device.pairTokenExpireAt || 0)) {
     return { error: 'PAIR_EXPIRED', message: '配对码已过期，请在设备上刷新二维码' }
@@ -258,6 +263,7 @@ module.exports = {
   applyApprove,
   applyReject,
   applyLock,
+  applyRemoteLock,
   applyBind,
   applyCommand,
   clearCommand,

@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -176,6 +177,26 @@ object LockController {
     fun setTvHomeEnabled(context: Context, enabled: Boolean) {
         if (!isTelevision(context)) return
         setComponentEnabled(context, HOME_ALIAS, enabled)
+    }
+
+    fun sleepDevice(context: Context): Boolean {
+        tvStandby = true
+        if (ShotService.lockScreen()) return true
+        if (isDeviceOwner(context)) {
+            try {
+                context.getSystemService(DevicePolicyManager::class.java).lockNow()
+                return true
+            } catch (_: Exception) {
+            }
+        }
+        return try {
+            val pm = context.getSystemService(PowerManager::class.java)
+            val method = PowerManager::class.java.getMethod("goToSleep", Long::class.javaPrimitiveType)
+            method.invoke(pm, SystemClock.uptimeMillis())
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     fun canLaunchLock(context: Context): Boolean {

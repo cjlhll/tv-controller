@@ -163,26 +163,18 @@ Page({
       })
   },
   lockDevice() {
-    wx.showModal({
-      title: '远程锁屏',
-      content: '确定立即锁定这台设备？',
-      confirmColor: '#b91c1c',
-      success: (res) => {
-        if (!res.confirm) return
-        wx.showLoading({ title: '下发中' })
-        api
-          .call('remoteLock', { deviceId: this.data.deviceId })
-          .then((body) => {
-            wx.hideLoading()
-            wx.showToast({ title: '已远程锁屏' })
-            this.applyDevice(body.device, body.now)
-          })
-          .catch((err) => {
-            wx.hideLoading()
-            wx.showToast({ title: err.message, icon: 'none' })
-          })
-      },
-    })
+    wx.showLoading({ title: '下发中' })
+    api
+      .call('remoteLock', { deviceId: this.data.deviceId })
+      .then((body) => {
+        wx.hideLoading()
+        wx.showToast({ title: '已让设备休眠' })
+        this.applyDevice(body.device, body.now)
+      })
+      .catch((err) => {
+        wx.hideLoading()
+        wx.showToast({ title: err.message, icon: 'none' })
+      })
   },
   takeScreenshot() {
     if (this.data.shotLoading) return

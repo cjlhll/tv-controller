@@ -7,3 +7,9 @@ https://armbian.caojian.shop:8787 {
 	encode gzip
 	reverse_proxy api:8787
 }
+
+https://armbian.caojian.shop {
+	tls /certs/fullchain.cer /certs/key.pem
+	encode gzip
+	reverse_proxy api:8787
+}

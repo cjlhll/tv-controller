@@ -52,7 +52,7 @@
   <view class="section-label">远程操作</view>
   <view class="row">
     <view class="btn btn-secondary" bindtap="takeScreenshot">{{shotLoading ? '截图中…' : '获取截图'}}</view>
-    <view class="btn btn-danger" bindtap="lockDevice">远程锁屏</view>
+    <view class="btn btn-danger" bindtap="lockDevice">远程休眠</view>
   </view>
   <image
     wx:if="{{shotPath}}"

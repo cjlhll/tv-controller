@@ -21,6 +21,19 @@ function saveDb(db) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2))
 }
 
+let dbChain = Promise.resolve()
+
+function withDb(fn) {
+  const run = dbChain.then(async () => {
+    const db = loadDb()
+    const result = await fn(db)
+    saveDb(db)
+    return result
+  })
+  dbChain = run.then(() => {}, () => {})
+  return run
+}
+
 function json(res, status, body) {
   const raw = JSON.stringify(body)
   res.writeHead(status, {
@@ -320,10 +333,10 @@ function handleUser(db, action, payload) {
     return ok({ device: logic.publicDevice(device) })
   }
   if (action === 'remoteLock') {
-    logic.applyLock(device, now)
-    persistDevice(db, device)
+    const result = logic.applyRemoteLock(device, now)
+    persistDevice(db, result.device)
     addLog(db, { deviceId: device.deviceId, action: 'lock', openid, createdAt: now })
-    return ok({ device: logic.publicDevice(device) })
+    return ok({ device: logic.publicDevice(result.device) })
   }
   if (action === 'requestScreenshot') {
     const result = logic.applyCommand(device, 'screenshot', now)
@@ -482,11 +495,9 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && (url.pathname === '/api' || url.pathname === '/')) {
-    const db = loadDb()
     try {
       const payload = await readBody(req)
-      const result = await dispatch(db, payload)
-      saveDb(db)
+      const result = await withDb((db) => dispatch(db, payload))
       json(res, 200, result)
     } catch (err) {
       json(res, 400, fail('BAD_REQUEST', err.message))

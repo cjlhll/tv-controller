@@ -137,6 +137,15 @@ class LockService : Service() {
     }
 
     private fun handleRemoteCommand(command: String) {
+        if (command == "sleep") {
+            shotFails = 0
+            main.post { LockController.sleepDevice(this) }
+            try {
+                client.ackCommand()
+            } catch (_: Exception) {
+            }
+            return
+        }
         if (command != "screenshot") {
             shotFails = 0
             return

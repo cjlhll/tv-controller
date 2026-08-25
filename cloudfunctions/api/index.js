@@ -331,10 +331,10 @@ async function handleUser(action, payload, openid) {
     }
 
     if (action === 'remoteLock') {
-      logic.applyLock(device, now)
-      await saveDevice(device)
+      const result = logic.applyRemoteLock(device, now)
+      await saveDevice(result.device)
       await addLog({ deviceId: device.deviceId, action: 'lock', openid, createdAt: now })
-      return ok({ device: logic.publicDevice(device) })
+      return ok({ device: logic.publicDevice(result.device) })
     }
 
     if (action === 'requestScreenshot') {

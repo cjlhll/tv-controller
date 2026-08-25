@@ -36,6 +36,11 @@ class ShotService : AccessibilityService() {
         var instance: ShotService? = null
             private set
 
+        fun lockScreen(): Boolean {
+            if (Build.VERSION.SDK_INT < 28) return false
+            return instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN) == true
+        }
+
         fun captureBitmap(): Bitmap? {
             if (Build.VERSION.SDK_INT < 30) return null
             val svc = instance ?: return null

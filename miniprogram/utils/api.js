@@ -1,12 +1,31 @@
 const env = require('../env.js')
-const LOCAL_API = env.localApiUrl
+const API_URLS = uniqueUrls([
+  env.localApiUrl,
+  'https://armbian.caojian.shop/api',
+  'https://armbian.caojian.shop:8787/api',
+])
 
 let cachedOpenid = ''
+let workingUrl = API_URLS[0]
 
-function request(action, data) {
+function uniqueUrls(list) {
+  const out = []
+  list.forEach((u) => {
+    if (u && out.indexOf(u) < 0) out.push(u)
+  })
+  return out
+}
+
+function nextUrl(url) {
+  const i = API_URLS.indexOf(url)
+  return i >= 0 && i < API_URLS.length - 1 ? API_URLS[i + 1] : ''
+}
+
+function request(action, data, url) {
+  const target = url || workingUrl
   return new Promise((resolve, reject) => {
     wx.request({
-      url: LOCAL_API,
+      url: target,
       method: 'POST',
       header: { 'content-type': 'application/json' },
       data: Object.assign({ action: action }, data || {}),
@@ -16,10 +35,16 @@ function request(action, data) {
           reject(new Error(body.message || '请求失败'))
           return
         }
+        workingUrl = target
         resolve(body)
       },
       fail(err) {
-        reject(new Error((err && err.errMsg) || '连不上 API，请确认 https://armbian.caojian.shop:8787 可访问'))
+        const fallback = nextUrl(target)
+        if (fallback) {
+          request(action, data, fallback).then(resolve, reject)
+          return
+        }
+        reject(new Error((err && err.errMsg) || '连不上 API。电脑请把 armbian.caojian.shop 指到 192.168.1.2，或关掉 VPN 后重试'))
       },
     })
   })
