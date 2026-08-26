@@ -45,6 +45,14 @@ page {
   gap: 16rpx;
 }
 
+.device-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+  flex-shrink: 0;
+}
+
 .device-name {
   font-size: 36rpx;
   font-weight: 600;
@@ -287,6 +295,49 @@ page {
 
 .shot-hint {
   margin-top: 12rpx;
+}
+
+.pin-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  background: rgba(15, 23, 42, 0.64);
+}
+
+.pin-dialog {
+  width: 100%;
+  max-width: 620rpx;
+  background: #1e293b;
+  border: 2rpx solid #334155;
+  border-radius: 24rpx;
+  padding: 36rpx 32rpx 32rpx;
+  box-sizing: border-box;
+}
+
+.pin-dialog-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-bottom: 8rpx;
+}
+
+.pin-dialog .hint {
+  margin-bottom: 24rpx;
+}
+
+.pin-dialog .field {
+  margin-bottom: 28rpx;
+}
+
+.log-dot-setPin {
+  background: #38bdf8;
 }
 
 .stack {

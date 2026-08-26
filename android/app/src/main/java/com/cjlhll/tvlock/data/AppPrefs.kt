@@ -74,6 +74,13 @@ class AppPrefs(context: Context) {
         return stored.isNotEmpty() && stored == hashPin(pin, pinSalt)
     }
 
+    fun applyCloudPin(pin: String): Boolean {
+        if (pin.length !in 4..6 || pin.any { !it.isDigit() }) return false
+        if (verifyPin(pin)) return false
+        setPin(pin)
+        return true
+    }
+
     companion object {
         const val DEFAULT_SERVER = "https://armbian.caojian.shop:8787/api"
 

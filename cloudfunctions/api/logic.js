@@ -52,6 +52,7 @@ function publicDevice(device, now = nowMs(), opts = {}) {
     screenshotError: device.screenshotError || '',
   }
   if (device.hw) out.hw = device.hw
+  out.pin = device.pin || ''
   if (opts.includeCommand) {
     out.pendingCommand = effectiveCommand(device, now)
   }
@@ -95,6 +96,31 @@ function applyHardware(device, payload) {
   return device
 }
 
+function normalizePin(pin) {
+  const s = String(pin || '').trim()
+  if (!/^\d{4,6}$/.test(s)) {
+    return { error: 'BAD_PIN', message: 'PIN 须为 4–6 位数字' }
+  }
+  return { pin: s }
+}
+
+function applySetPin(device, pin, now, opts = {}) {
+  const checked = normalizePin(pin)
+  if (checked.error) return checked
+  if (opts.onlyIfEmpty && device.pin) {
+    return { device, skipped: true }
+  }
+  device.pin = checked.pin
+  device.pinUpdatedAt = now
+  return { device }
+}
+
+function applyIncomingPin(device, payload, now, onlyIfEmpty) {
+  if (!payload || payload.pin == null || String(payload.pin).trim() === '') return device
+  const result = applySetPin(device, payload.pin, now, { onlyIfEmpty })
+  return result.device || device
+}
+
 function applyRegister(existing, payload, now) {
   if (existing) {
     existing.name = payload.name || existing.name
@@ -102,6 +128,7 @@ function applyRegister(existing, payload, now) {
     existing.onlineAt = now
     applyHardware(existing, payload)
     expireIfNeeded(existing, now)
+    applyIncomingPin(existing, payload, now, true)
     return existing
   }
   const created = {
@@ -114,6 +141,8 @@ function applyRegister(existing, payload, now) {
     pairToken: pairCode(),
     pairTokenExpireAt: now + PAIR_TTL_MS,
     pinHash: '',
+    pin: '',
+    pinUpdatedAt: 0,
     lastWakeAt: 0,
     lastNotifyAt: 0,
     onlineAt: now,
@@ -121,6 +150,7 @@ function applyRegister(existing, payload, now) {
     createdAt: now,
   }
   applyHardware(created, payload)
+  applyIncomingPin(created, payload, now, false)
   return created
 }
 
@@ -256,6 +286,8 @@ module.exports = {
   publicDevice,
   expireIfNeeded,
   applyHardware,
+  normalizePin,
+  applySetPin,
   applyRegister,
   applyRefreshPair,
   applyWake,

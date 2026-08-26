@@ -314,6 +314,13 @@ function handleUser(db, action, payload) {
     persistDevice(db, device)
     return ok({ device: logic.publicDevice(device) })
   }
+  if (action === 'setPin') {
+    const result = logic.applySetPin(device, payload.pin, now)
+    if (result.error) return fail(result.error, result.message)
+    persistDevice(db, result.device)
+    addLog(db, { deviceId: device.deviceId, action: 'setPin', openid, createdAt: now })
+    return ok({ device: logic.publicDevice(result.device) })
+  }
   if (action === 'approve') {
     const { device: unlocked, minutes } = logic.applyApprove(device, payload.durationMin, now)
     persistDevice(db, unlocked)
@@ -386,6 +393,7 @@ function dispatch(db, payload) {
     'reject',
     'logs',
     'setDeviceName',
+    'setPin',
     'remoteLock',
     'requestScreenshot',
     'getScreenshot',
@@ -440,6 +448,12 @@ function adminPage() {
       if (!r.ok) alert(r.message)
       load()
     }
+    async function setPin(deviceId) {
+      const pin = document.getElementById('pin-' + deviceId).value
+      const r = await api({ action:'setPin', deviceId, pin, openid:'local-parent' })
+      if (!r.ok) alert(r.message)
+      load()
+    }
     function remain(u) {
       const ms = (u||0) - Date.now()
       if (ms <= 0) return ''
@@ -460,6 +474,9 @@ function adminPage() {
             + '<div class="spec"><kbd>运存</kbd><span>' + (d.hw.ram || '-') + '</span></div>'
             + '<div class="spec"><kbd>存储</kbd><span>' + (d.hw.storage || '-') + '</span></div>'
             + '</div>' : '<p class="muted">等待设备上报规格</p>'}
+          <div class="muted">PIN \${d.pin || '未设置'}</div>
+          <input id="pin-\${d.deviceId}" maxlength="6" placeholder="新PIN" style="width:96px"/>
+          <button class="ghost" onclick="setPin('\${d.deviceId}')">改PIN</button>
           <button onclick="act('\${d.deviceId}','approve',15)">15分钟</button>
           <button onclick="act('\${d.deviceId}','approve',30)">30分钟</button>
           <button onclick="act('\${d.deviceId}','approve',60)">1小时</button>

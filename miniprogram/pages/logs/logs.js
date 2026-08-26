@@ -8,6 +8,7 @@ const ACTION = {
   approve: '批准解锁',
   reject: '拒绝',
   pin: '本机 PIN 解锁',
+  setPin: '修改 PIN',
   lock: '回锁',
 }
 

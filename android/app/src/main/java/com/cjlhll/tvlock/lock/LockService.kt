@@ -103,6 +103,9 @@ class LockService : Service() {
                 }
                 val res = if (shouldWake) client.wake() else client.state()
                 val snap = client.snapshotFrom(res) ?: return@execute
+                if (snap.pin.isNotEmpty()) {
+                    prefs.applyCloudPin(snap.pin)
+                }
                 SessionBus.post(snap)
                 handleRemoteCommand(snap.pendingCommand)
                 val localExpired = snap.status == "unlocked" &&

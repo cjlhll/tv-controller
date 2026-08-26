@@ -20,7 +20,7 @@ class CloudClient(private val prefs: AppPrefs) {
         .writeTimeout(8, TimeUnit.SECONDS)
         .build()
 
-    fun register(): JSONObject {
+    fun register(pin: String = ""): JSONObject {
         val ctx = TvLockApp.instance
         val marketing = DeviceInfo.marketingName(ctx)
         if (prefs.deviceName.isBlank() || prefs.deviceName == Build.MODEL) {
@@ -33,6 +33,9 @@ class CloudClient(private val prefs: AppPrefs) {
         if (prefs.deviceId.isNotEmpty() && prefs.deviceSecret.isNotEmpty()) {
             extra.put("deviceId", prefs.deviceId)
             extra.put("deviceSecret", prefs.deviceSecret)
+        }
+        if (pin.length in 4..6 && pin.all { it.isDigit() }) {
+            extra.put("pin", pin)
         }
         val res = post("register", extra, includeAuth = false)
         if (res.optBoolean("ok")) {

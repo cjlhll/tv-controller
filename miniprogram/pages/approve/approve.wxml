@@ -5,24 +5,9 @@
         <view class="device-name">{{device.name}}</view>
         <view class="device-meta">{{device.formText}} · {{device.shortId}}</view>
       </view>
-      <view class="pill pill-{{statusKind}}">{{statusText}}</view>
-    </view>
-    <view class="hw-specs" wx:if="{{device.hw}}">
-      <view class="hw-spec">
-        <text class="hw-spec-k">系统</text>
-        <text class="hw-spec-v">{{device.hw.os}}</text>
-      </view>
-      <view class="hw-spec">
-        <text class="hw-spec-k">屏幕</text>
-        <text class="hw-spec-v">{{device.hw.screen}}</text>
-      </view>
-      <view class="hw-spec">
-        <text class="hw-spec-k">运存</text>
-        <text class="hw-spec-v">{{device.hw.ram}}</text>
-      </view>
-      <view class="hw-spec">
-        <text class="hw-spec-k">存储</text>
-        <text class="hw-spec-v">{{device.hw.storage}}</text>
+      <view class="device-side">
+        <view class="pill pill-{{statusKind}}">{{statusText}}</view>
+        <view class="pill" bindtap="openPinDialog">{{device.pin || '未设置'}}</view>
       </view>
     </view>
   </view>
@@ -68,5 +53,27 @@
   <view class="card empty">
     <view class="empty-title">找不到设备</view>
     <view class="empty-desc">它可能尚未绑定到当前账号。</view>
+  </view>
+</view>
+
+<view wx:if="{{pinDialog}}" class="pin-mask" catchtap="closePinDialog">
+  <view class="pin-dialog" catchtap="keepPinDialog">
+    <view class="pin-dialog-title">修改 PIN</view>
+    <view class="hint">当前 {{device.pin || '未设置'}}，输入 4–6 位数字</view>
+    <view class="field">
+      <input
+        class="input"
+        type="number"
+        maxlength="6"
+        focus
+        placeholder="新 PIN"
+        value="{{newPin}}"
+        bindinput="onNewPin"
+      />
+    </view>
+    <view class="row">
+      <view class="btn btn-secondary" bindtap="closePinDialog">取消</view>
+      <view class="btn btn-primary" bindtap="savePin">保存</view>
+    </view>
   </view>
 </view>

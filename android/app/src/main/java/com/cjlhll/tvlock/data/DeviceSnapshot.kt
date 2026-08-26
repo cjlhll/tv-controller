@@ -13,6 +13,7 @@ data class DeviceSnapshot(
     val pairTokenExpireAt: Long = 0,
     val pendingCommand: String = "",
     val screenshotAt: Long = 0,
+    val pin: String = "",
 ) {
     val isUnlocked: Boolean
         get() = status == "unlocked" && unlockUntil > System.currentTimeMillis()
@@ -35,6 +36,7 @@ data class DeviceSnapshot(
                 pairTokenExpireAt = obj.optLong("pairTokenExpireAt", device.optLong("pairTokenExpireAt")),
                 pendingCommand = obj.optString("pendingCommand", device.optString("pendingCommand")),
                 screenshotAt = obj.optLong("screenshotAt", device.optLong("screenshotAt")),
+                pin = device.optString("pin"),
             )
         }
     }

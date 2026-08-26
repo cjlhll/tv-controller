@@ -91,7 +91,7 @@ class SetupActivity : AppCompatActivity() {
         binding.saveButton.isEnabled = false
         thread {
             try {
-                val res = CloudClient(prefs).register()
+                val res = CloudClient(prefs).register(if (pin.length in 4..6) pin else "")
                 Log.i(TAG, "register $res")
                 runOnUiThread {
                     if (!res.optBoolean("ok")) {

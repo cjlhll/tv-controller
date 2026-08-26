@@ -291,6 +291,7 @@ async function handleUser(action, payload, openid) {
     action === 'reject' ||
     action === 'logs' ||
     action === 'setDeviceName' ||
+    action === 'setPin' ||
     action === 'remoteLock' ||
     action === 'requestScreenshot' ||
     action === 'getScreenshot'
@@ -315,6 +316,14 @@ async function handleUser(action, payload, openid) {
       device.name = logic.clip(payload.name || device.name, 20)
       await saveDevice(device)
       return ok({ device: logic.publicDevice(device) })
+    }
+
+    if (action === 'setPin') {
+      const result = logic.applySetPin(device, payload.pin, now)
+      if (result.error) return fail(result.error, result.message)
+      await saveDevice(result.device)
+      await addLog({ deviceId: device.deviceId, action: 'setPin', openid, createdAt: now })
+      return ok({ device: logic.publicDevice(result.device) })
     }
 
     if (action === 'approve') {
@@ -383,6 +392,7 @@ const USER_ACTIONS = new Set([
   'reject',
   'logs',
   'setDeviceName',
+  'setPin',
   'remoteLock',
   'requestScreenshot',
   'getScreenshot',

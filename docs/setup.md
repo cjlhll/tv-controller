@@ -148,3 +148,4 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 - `reject`
 - `logs`
 - `setDeviceName`
+- `setPin`（`deviceId`, 4–6 位数字 `pin`；`myDevices` 会返回当前 PIN）

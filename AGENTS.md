@@ -28,7 +28,7 @@
 
 配对码 6 位，10 分钟过期，用一次即作废。锁屏在锁定/未绑定时都显示「刷新配对码」；点了才出二维码。长按标题进设置，不要靠这个找配对码。应用图标直接进锁屏，不再进初始设置页。
 
-本机 PIN（4–6 位，SHA-256+salt 存在手机 SharedPreferences）走 `pinUnlock`，默认 30 分钟。当前测试机 PIN 是 **`2468`**。长按锁屏标题回设置页。
+本机 PIN（4–6 位数字）存在云端，家长可在小程序查看和修改；设备轮询 `state` 后同步到本机哈希（SHA-256+salt）。走 `pinUnlock`，默认 30 分钟。当前测试机 PIN 是 **`2468`**。长按锁屏标题回设置页。云端已有 PIN 时，本机设置页改 PIN 不会覆盖。
 
 Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLockTask`。包名 `com.cjlhll.tvlock`，Admin：`.lock.LockAdminReceiver`。
 
@@ -59,9 +59,9 @@ Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLoc
 | 调用方 | action | 鉴权 |
 |---|---|---|
 | 设备 | `register` `refreshPair` `wake` `state` `heartbeat` `pinUnlock` `lock` `requestUnlock` `ackCommand` `uploadScreenshot` | `deviceId` + `deviceSecret`（`register` 可首次不带） |
-| 家长 | `login` `bind` `myDevices` `approve` `reject` `logs` `setDeviceName` `remoteLock` `requestScreenshot` `getScreenshot` | 小程序 `wx.login` → `login` 换真实 openid；本机审批页用 `local-parent` |
+| 家长 | `login` `bind` `myDevices` `approve` `reject` `logs` `setDeviceName` `setPin` `remoteLock` `requestScreenshot` `getScreenshot` | 小程序 `wx.login` → `login` 换真实 openid；本机审批页用 `local-parent` |
 
-`bind` 需要 `pairToken`。`approve` 需要 `deviceId` + `durationMin`。
+`bind` 需要 `pairToken`。`approve` 需要 `deviceId` + `durationMin`。`setPin` 需要 `deviceId` + 4–6 位数字 `pin`；`myDevices` 会带上当前 `pin`。
 
 联调 openid：
 

@@ -63,6 +63,8 @@ Page({
     shotPath: '',
     shotHint: '',
     shotLoading: false,
+    pinDialog: false,
+    newPin: '',
   },
   onLoad(query) {
     this.setData({ deviceId: query.deviceId || '' })
@@ -170,6 +172,39 @@ Page({
         wx.hideLoading()
         wx.showToast({ title: '已让设备休眠' })
         this.applyDevice(body.device, body.now)
+      })
+      .catch((err) => {
+        wx.hideLoading()
+        wx.showToast({ title: err.message, icon: 'none' })
+      })
+  },
+  openPinDialog() {
+    this.setData({
+      pinDialog: true,
+      newPin: (this.data.device && this.data.device.pin) || '',
+    })
+  },
+  closePinDialog() {
+    this.setData({ pinDialog: false, newPin: '' })
+  },
+  keepPinDialog() {},
+  onNewPin(e) {
+    this.setData({ newPin: e.detail.value })
+  },
+  savePin() {
+    const pin = String(this.data.newPin || '').trim()
+    if (!/^\d{4,6}$/.test(pin)) {
+      wx.showToast({ title: 'PIN 须为 4–6 位数字', icon: 'none' })
+      return
+    }
+    wx.showLoading({ title: '保存中' })
+    api
+      .call('setPin', { deviceId: this.data.deviceId, pin })
+      .then((res) => {
+        wx.hideLoading()
+        wx.showToast({ title: 'PIN 已更新' })
+        this.setData({ pinDialog: false, newPin: '' })
+        this.applyDevice(res.device, res.now)
       })
       .catch((err) => {
         wx.hideLoading()
