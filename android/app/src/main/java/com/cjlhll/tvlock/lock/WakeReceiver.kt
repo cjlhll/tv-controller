@@ -18,7 +18,9 @@ class WakeReceiver : BroadcastReceiver() {
             Intent.ACTION_USER_PRESENT,
             -> {
                 LockController.tvStandby = false
-                LockService.start(context, reportWake = true)
+                if (com.cjlhll.tvlock.TvLockApp.instance.prefs.setupDone) {
+                    LockService.start(context, reportWake = true)
+                }
             }
         }
     }

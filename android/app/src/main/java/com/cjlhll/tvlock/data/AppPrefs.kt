@@ -81,6 +81,16 @@ class AppPrefs(context: Context) {
         return true
     }
 
+    var pinDurationMin: Int
+        get() {
+            val stored = sp.getInt("pinDurationMin", 30)
+            return if (stored in 1..(24 * 60)) stored else 30
+        }
+        set(value) {
+            val minutes = value.coerceIn(1, 24 * 60)
+            sp.edit().putInt("pinDurationMin", minutes).apply()
+        }
+
     companion object {
         const val DEFAULT_SERVER = "https://armbian.caojian.shop:8787/api"
 

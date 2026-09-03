@@ -1,5 +1,76 @@
 .index-wrap {
-  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+  padding: 28rpx 0 calc(180rpx + env(safe-area-inset-bottom));
+}
+
+.index-wrap .kicker {
+  padding: 0 32rpx;
+}
+
+.index-wrap .empty {
+  margin-left: 32rpx;
+  margin-right: 32rpx;
+}
+
+.swipe-row {
+  position: relative;
+  margin-bottom: 28rpx;
+  overflow: hidden;
+}
+
+.swipe-actions {
+  position: absolute;
+  right: 32rpx;
+  top: 0;
+  bottom: 0;
+  width: 160rpx;
+  display: flex;
+}
+
+.swipe-unbind {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 32rpx;
+  background: #b91c1c;
+  color: #fff7ed;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.swipe-unbind:active {
+  background: #991b1b;
+}
+
+.swipe-actions-left {
+  right: auto;
+  left: 32rpx;
+}
+
+.swipe-settings {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 32rpx;
+  background: #1d4ed8;
+  color: #eff6ff;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.swipe-settings:active {
+  background: #1e40af;
+}
+
+.swipe-front {
+  position: relative;
+  z-index: 1;
+  margin: 0 32rpx;
+}
+
+.swipe-anim {
+  transition: transform 0.2s ease;
 }
 
 .dev-card {
@@ -10,7 +81,6 @@
   border: 2rpx solid #334155;
   border-radius: 32rpx;
   padding: 32rpx;
-  margin-bottom: 28rpx;
   box-sizing: border-box;
 }
 
@@ -78,6 +148,18 @@
   align-items: flex-end;
   gap: 10rpx;
   flex-shrink: 0;
+}
+
+.dev-watch {
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid #334155;
+  color: #94a3b8;
+  font-size: 24rpx;
+}
+
+.dev-card-unlocked .dev-watch {
+  border-top-color: #1e3a8a;
 }
 
 .dev-pill {

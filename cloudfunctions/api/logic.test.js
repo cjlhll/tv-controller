@@ -114,4 +114,65 @@ assert.equal(fresh.pin, '8888')
 logic.applyRegister(fresh, { name: 'PIN机', pin: '9999' }, now + 13000)
 assert.equal(fresh.pin, '8888')
 
+const other = logic.applyRegister(null, { name: '解绑机' }, now + 20000)
+logic.applyBind(other, now + 20000)
+other.boundCount = 2
+other.status = 'unlocked'
+other.unlockUntil = now + 40000
+logic.applyUnbind(other, now + 21000)
+assert.equal(other.boundCount, 1)
+assert.equal(other.status, 'unlocked')
+assert.equal(other.unlockUntil, now + 40000)
+logic.applyUnbind(other, now + 22000)
+assert.equal(other.boundCount, 0)
+assert.equal(other.status, 'unbound')
+assert.equal(other.unlockUntil, 0)
+assert.ok(other.pairToken)
+
+const watch = logic.applyRegister(null, { name: '看时' }, now + 40000)
+logic.applyBind(watch, now + 40000)
+const t0 = now + 41000
+logic.applyApprove(watch, 30, t0)
+assert.equal(logic.todayWatchMinutes(watch, t0), 0)
+assert.equal(logic.publicDevice(watch, t0 + 10 * 60 * 1000).todayWatchMin, 10)
+logic.applyLock(watch, t0 + 10 * 60 * 1000)
+assert.equal(watch.watchSessionStart, 0)
+assert.equal(logic.todayWatchMinutes(watch, t0 + 20 * 60 * 1000), 10)
+
+const watch2 = logic.applyRegister(null, { name: '改时' }, now + 50000)
+logic.applyBind(watch2, now + 50000)
+logic.applyApprove(watch2, 30, t0)
+logic.applyApprove(watch2, 10, t0 + 5 * 60 * 1000)
+assert.equal(logic.todayWatchMinutes(watch2, t0 + 5 * 60 * 1000), 5)
+logic.applyLock(watch2, t0 + 15 * 60 * 1000)
+assert.equal(logic.todayWatchMinutes(watch2, t0 + 20 * 60 * 1000), 15)
+
+const watch3 = logic.applyRegister(null, { name: '到期' }, now + 60000)
+logic.applyBind(watch3, now + 60000)
+logic.applyApprove(watch3, 15, t0)
+logic.expireIfNeeded(watch3, t0 + 15 * 60 * 1000)
+assert.equal(watch3.status, 'locked')
+assert.equal(logic.todayWatchMinutes(watch3, t0 + 16 * 60 * 1000), 15)
+
+const midnight = Date.parse('2026-09-03T00:00:00+08:00')
+const before = midnight - 5 * 60 * 1000
+const after = midnight + 8 * 60 * 1000
+const watch4 = logic.applyRegister(null, { name: '跨天' }, before)
+logic.applyBind(watch4, before)
+logic.applyApprove(watch4, 60, before)
+logic.rollTodayWatch(watch4, after)
+assert.equal(watch4.todayWatchDate, '2026-09-03')
+assert.equal(watch4.todayWatchMs, 0)
+assert.equal(watch4.watchSessionStart, midnight)
+assert.equal(logic.todayWatchMinutes(watch4, after), 8)
+
+assert.equal(logic.publicDevice(device, now).pinDurationMin, 30)
+const pinDur = logic.applySetPinDuration(device, 45, now + 70000)
+assert.equal(pinDur.minutes, 45)
+assert.equal(device.pinDurationMin, 45)
+assert.equal(logic.pinUnlockMinutes(device), 45)
+assert.equal(logic.publicDevice(device, now + 70000).pinDurationMin, 45)
+logic.applySetPinDuration(device, 0, now + 71000)
+assert.equal(device.pinDurationMin, 30)
+
 console.log('logic.test.js ok')

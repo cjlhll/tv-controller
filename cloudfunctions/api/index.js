@@ -223,7 +223,7 @@ async function handleDevice(action, payload) {
   if (action === 'pinUnlock') {
     const { device: unlocked, minutes } = logic.applyApprove(
       device,
-      payload.durationMin || logic.DEFAULT_PIN_DURATION_MIN,
+      logic.pinUnlockMinutes(device),
       now
     )
     await saveDevice(unlocked)
@@ -287,11 +287,13 @@ async function handleUser(action, payload, openid) {
   }
 
   if (
+    action === 'unbind' ||
     action === 'approve' ||
     action === 'reject' ||
     action === 'logs' ||
     action === 'setDeviceName' ||
     action === 'setPin' ||
+    action === 'setPinDuration' ||
     action === 'remoteLock' ||
     action === 'requestScreenshot' ||
     action === 'getScreenshot'
@@ -301,6 +303,14 @@ async function handleUser(action, payload, openid) {
     const bound = await findBinding(openid, device.deviceId)
     if (!bound) return fail('FORBIDDEN', '未绑定该设备')
     logic.expireIfNeeded(device, now)
+
+    if (action === 'unbind') {
+      await db.collection('bindings').doc(bound._id).remove()
+      const result = logic.applyUnbind(device, now)
+      await saveDevice(result.device)
+      await addLog({ deviceId: device.deviceId, action: 'unbind', openid, createdAt: now })
+      return ok({ device: logic.publicDevice(result.device) })
+    }
 
     if (action === 'logs') {
       const snap = await db
@@ -324,6 +334,19 @@ async function handleUser(action, payload, openid) {
       await saveDevice(result.device)
       await addLog({ deviceId: device.deviceId, action: 'setPin', openid, createdAt: now })
       return ok({ device: logic.publicDevice(result.device) })
+    }
+
+    if (action === 'setPinDuration') {
+      const result = logic.applySetPinDuration(device, payload.durationMin, now)
+      await saveDevice(result.device)
+      await addLog({
+        deviceId: device.deviceId,
+        action: 'setPinDuration',
+        openid,
+        durationMin: result.minutes,
+        createdAt: now,
+      })
+      return ok({ device: logic.publicDevice(result.device), minutes: result.minutes })
     }
 
     if (action === 'approve') {
@@ -387,12 +410,14 @@ const DEVICE_ACTIONS = new Set([
 ])
 const USER_ACTIONS = new Set([
   'bind',
+  'unbind',
   'myDevices',
   'approve',
   'reject',
   'logs',
   'setDeviceName',
   'setPin',
+  'setPinDuration',
   'remoteLock',
   'requestScreenshot',
   'getScreenshot',

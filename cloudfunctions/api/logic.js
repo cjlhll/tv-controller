@@ -53,6 +53,8 @@ function publicDevice(device, now = nowMs(), opts = {}) {
   }
   if (device.hw) out.hw = device.hw
   out.pin = device.pin || ''
+  out.pinDurationMin = (device.pinDurationMin > 0 ? device.pinDurationMin : DEFAULT_PIN_DURATION_MIN)
+  out.todayWatchMin = todayWatchMinutes(device, now)
   if (opts.includeCommand) {
     out.pendingCommand = effectiveCommand(device, now)
   }
@@ -65,12 +67,78 @@ function publicDevice(device, now = nowMs(), opts = {}) {
 
 function expireIfNeeded(device, now) {
   if (!device) return device
+  rollTodayWatch(device, now)
   if (device.status === 'unlocked' && (device.unlockUntil || 0) > 0 && now >= device.unlockUntil) {
+    closeWatchSession(device, device.unlockUntil)
     device.status = 'locked'
     device.unlockUntil = 0
     device.expiredJustNow = true
   }
   return device
+}
+
+function shanghaiDate(ts) {
+  const d = new Date(Number(ts) + 8 * 60 * 60 * 1000)
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function shanghaiMidnight(ts) {
+  return Date.parse(`${shanghaiDate(ts)}T00:00:00+08:00`)
+}
+
+function rollTodayWatch(device, now) {
+  if (!device) return device
+  const day = shanghaiDate(now)
+  if (device.todayWatchDate !== day) {
+    if ((device.watchSessionStart || 0) > 0) {
+      device.watchSessionStart = Math.max(device.watchSessionStart, shanghaiMidnight(now))
+    }
+    device.todayWatchMs = 0
+    device.todayWatchDate = day
+  }
+  if (
+    device.status === 'unlocked' &&
+    (device.unlockUntil || 0) > now &&
+    !(device.watchSessionStart > 0)
+  ) {
+    device.watchSessionStart = now
+  }
+  return device
+}
+
+function closeWatchSession(device, endAt) {
+  if (!device) return device
+  rollTodayWatch(device, endAt)
+  const start = device.watchSessionStart || 0
+  if (start > 0 && endAt > start) {
+    device.todayWatchMs = (device.todayWatchMs || 0) + (endAt - start)
+  }
+  device.watchSessionStart = 0
+  return device
+}
+
+function startWatchSession(device, now) {
+  rollTodayWatch(device, now)
+  device.watchSessionStart = now
+  return device
+}
+
+function todayWatchMinutes(device, now) {
+  if (!device) return 0
+  const day = shanghaiDate(now)
+  let ms = device.todayWatchDate === day ? device.todayWatchMs || 0 : 0
+  let start = device.watchSessionStart || 0
+  if (device.todayWatchDate !== day && start > 0) {
+    start = Math.max(start, shanghaiMidnight(now))
+  }
+  if (device.status === 'unlocked' && (device.unlockUntil || 0) > now && start > 0) {
+    ms += Math.max(0, now - start)
+  }
+  const min = Math.round(ms / 60000)
+  return min > 0 ? min : 0
 }
 
 function followsSystemName(name, prevModel) {
@@ -102,6 +170,22 @@ function normalizePin(pin) {
     return { error: 'BAD_PIN', message: 'PIN 须为 4–6 位数字' }
   }
   return { pin: s }
+}
+
+function normalizeDurationMin(durationMin, fallback = DEFAULT_PIN_DURATION_MIN) {
+  const n = Number(durationMin)
+  const base = Number.isFinite(n) && n > 0 ? n : fallback
+  return Math.max(1, Math.min(24 * 60, Math.round(base)))
+}
+
+function applySetPinDuration(device, durationMin, now) {
+  device.pinDurationMin = normalizeDurationMin(durationMin)
+  device.onlineAt = now
+  return { device, minutes: device.pinDurationMin }
+}
+
+function pinUnlockMinutes(device) {
+  return normalizeDurationMin(device && device.pinDurationMin)
 }
 
 function applySetPin(device, pin, now, opts = {}) {
@@ -143,10 +227,14 @@ function applyRegister(existing, payload, now) {
     pinHash: '',
     pin: '',
     pinUpdatedAt: 0,
+    pinDurationMin: DEFAULT_PIN_DURATION_MIN,
     lastWakeAt: 0,
     lastNotifyAt: 0,
     onlineAt: now,
     boundCount: 0,
+    todayWatchMs: 0,
+    todayWatchDate: '',
+    watchSessionStart: 0,
     createdAt: now,
   }
   applyHardware(created, payload)
@@ -168,6 +256,7 @@ function applyWake(device, now) {
   if (device.status === 'unlocked' && (device.unlockUntil || 0) > now) {
     return { device, notify: false, reason: 'still_unlocked' }
   }
+  closeWatchSession(device, now)
   if (device.status === 'unbound') {
     return { device, notify: false, reason: 'unbound' }
   }
@@ -185,6 +274,7 @@ function applyRequestUnlock(device, now) {
   if (device.status === 'unlocked' && (device.unlockUntil || 0) > now) {
     return { device, notify: false, reason: 'still_unlocked' }
   }
+  closeWatchSession(device, now)
   if (device.status === 'unbound') {
     return { device, notify: false, reason: 'unbound' }
   }
@@ -196,14 +286,18 @@ function applyRequestUnlock(device, now) {
 
 function applyApprove(device, durationMin, now) {
   expireIfNeeded(device, now)
-  const minutes = Math.max(1, Math.min(24 * 60, Number(durationMin) || 30))
+  const minutes = normalizeDurationMin(durationMin)
+  if (device.watchSessionStart) closeWatchSession(device, now)
   device.status = 'unlocked'
   device.unlockUntil = now + minutes * 60 * 1000
   device.onlineAt = now
+  startWatchSession(device, now)
   return { device, minutes }
 }
 
 function applyReject(device, now) {
+  expireIfNeeded(device, now)
+  closeWatchSession(device, now)
   device.status = 'locked'
   device.unlockUntil = 0
   device.onlineAt = now
@@ -211,6 +305,8 @@ function applyReject(device, now) {
 }
 
 function applyLock(device, now) {
+  expireIfNeeded(device, now)
+  closeWatchSession(device, now)
   device.status = device.boundCount > 0 || device.status !== 'unbound' ? 'locked' : 'unbound'
   if (device.boundCount > 0) device.status = 'locked'
   device.unlockUntil = 0
@@ -232,6 +328,20 @@ function applyBind(device, now) {
   device.pairTokenExpireAt = 0
   if (device.status === 'unbound') device.status = 'locked'
   device.onlineAt = now
+  return { device }
+}
+
+function applyUnbind(device, now) {
+  device.boundCount = Math.max(0, (device.boundCount || 0) - 1)
+  if (device.boundCount === 0) {
+    expireIfNeeded(device, now)
+    closeWatchSession(device, now)
+    device.status = 'unbound'
+    device.unlockUntil = 0
+    applyRefreshPair(device, now)
+  } else {
+    device.onlineAt = now
+  }
   return { device }
 }
 
@@ -283,11 +393,17 @@ module.exports = {
   pairCode,
   clip,
   formatTime,
+  shanghaiDate,
   publicDevice,
   expireIfNeeded,
+  rollTodayWatch,
+  todayWatchMinutes,
   applyHardware,
   normalizePin,
+  normalizeDurationMin,
   applySetPin,
+  applySetPinDuration,
+  pinUnlockMinutes,
   applyRegister,
   applyRefreshPair,
   applyWake,
@@ -297,6 +413,7 @@ module.exports = {
   applyLock,
   applyRemoteLock,
   applyBind,
+  applyUnbind,
   applyCommand,
   clearCommand,
   effectiveCommand,

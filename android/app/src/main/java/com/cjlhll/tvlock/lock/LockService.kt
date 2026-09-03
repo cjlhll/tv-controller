@@ -39,6 +39,10 @@ class LockService : Service() {
         client = CloudClient(TvLockApp.instance.prefs)
         createChannel()
         startForeground(NOTIF_ID, buildNotification("正在守护锁定状态"))
+        if (!TvLockApp.instance.prefs.setupDone) {
+            stopSelf()
+            return
+        }
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
@@ -60,13 +64,17 @@ class LockService : Service() {
             registerReceiver(homeReceiver, homeFilter)
         }
         LockController.prepareLockTask(this)
-        if (TvLockApp.instance.prefs.setupDone && LockController.shouldShowLock(SessionBus.last)) {
+        if (LockController.shouldShowLock(SessionBus.last)) {
             LockController.setTvHomeEnabled(this, true)
         }
         main.post(poller)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!TvLockApp.instance.prefs.setupDone) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         if (intent?.getBooleanExtra(EXTRA_WAKE, false) == true) {
             pollWake = true
         }
@@ -105,6 +113,9 @@ class LockService : Service() {
                 val snap = client.snapshotFrom(res) ?: return@execute
                 if (snap.pin.isNotEmpty()) {
                     prefs.applyCloudPin(snap.pin)
+                }
+                if (snap.pinDurationMin > 0) {
+                    prefs.pinDurationMin = snap.pinDurationMin
                 }
                 SessionBus.post(snap)
                 handleRemoteCommand(snap.pendingCommand)

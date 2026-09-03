@@ -107,19 +107,23 @@ Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLoc
 
 `project.config.json` 的 `cloudfunctionRoot` 必须是 `cloudfunctions/`，开发者工具才认云函数目录。不要把函数放回 `cloud/functions/`。
 
-微信开发者工具 **不要** 打开 `\\wsl.localhost\...`。必须打开 Windows 副本：
+微信开发者工具 **不要** 打开 `\\wsl.localhost\...`。必须打开宿主机目录：
 
-`C:\Users\caoji\tv-controller`
+`D:\test`
 
-WSL 改了 `miniprogram/` / `cloudfunctions/` / `project.config.json` 后同步：
+这是开发者工具的工程根（`project.config.json` + `miniprogram/` + `cloudfunctions/`）。改完 WSL 源码后 **必须立刻同步到这里**，开发者工具才会自动看到更新。不要只改 WSL 就声称「小程序已更新」。
+
+每次改了 `miniprogram/`、`cloudfunctions/` 或 `project.config.json` 后执行：
 
 ```bash
 rsync -a --delete \
- --exclude android --exclude cloud/local-server/data.json --exclude cloud/local-server/.env \
- /home/cjlhll/test/tv-controller/ /mnt/c/Users/caoji/tv-controller/
+  /home/cjlhll/test/tv-controller/miniprogram/ /mnt/d/test/miniprogram/
+rsync -a --delete --exclude node_modules \
+  /home/cjlhll/test/tv-controller/cloudfunctions/ /mnt/d/test/cloudfunctions/
+cp /home/cjlhll/test/tv-controller/project.config.json /mnt/d/test/project.config.json
 ```
 
-只改小程序时至少同步 `miniprogram/`。
+`D:\test` 只放小程序工程，不要把 `android/`、`.env`、`data.json` 同步进去。
 
 ---
 
@@ -133,8 +137,9 @@ Cursor / 编译 APK / 本机 API：在 **WSL Debian**。
 - 当前设备：`721QACREKPMRU`，model `M6 Note`。
 - 不要再做 `adb reverse`。手机和小程序都打 `https://armbian.caojian.shop:8787/api`。
 - 编 APK：`org.gradle.java.home=/home/cjlhll/.local/jdk-17`（系统 OpenJDK 21 没有 `jlink`）。SDK：`android/local.properties` → `/home/cjlhll/Android/Sdk`。
-- 微信 CLI：`C:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat`，IDE HTTP `127.0.0.1:10555`。CLI 不认 `\\wsl$\` 工程路径，要对 `C:\Users\caoji\tv-controller`。
-- 自动化：`cli auto --project C:\Users\caoji\tv-controller --auto-port 9420`。从 WSL 连 `ws://172.18.192.1:9420`（Windows 在 `::` 上听 9420）。`miniprogram-automator` 的 `checkVersion` 在此 IDE 版本上会炸，需跳过。
+- 签名：`~/.android/debug.keystore`（debug/release 同一把）。**备份** `D:\tvlock-keys\debug.keystore`，重装系统后必须拷回来，否则无法覆盖已装包。当前证书 SHA-256：`27FEA9458FC746FEF1D322E6B2A9A2BAA702C97E304035A2A1B9D9F05F1E8234`。
+- 微信 CLI：`C:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat`，IDE HTTP `127.0.0.1:10555`。CLI 不认 `\\wsl$\` 工程路径，要对 `D:\test`。
+- 自动化：`cli auto --project D:\test --auto-port 9420`。从 WSL 连 `ws://172.18.192.1:9420`（Windows 在 `::` 上听 9420）。`miniprogram-automator` 的 `checkVersion` 在此 IDE 版本上会炸，需跳过。
 
 当前正式 AppID：`wx0ae9a52d7f29cc39`（`project.config.json` 已对齐）。开发者工具必须用这个号打开工程，真机预览才能收订阅消息。
 
@@ -145,7 +150,7 @@ Cursor / 编译 APK / 本机 API：在 **WSL Debian**。
 1. 确认 `https://armbian.caojian.shop:8787/health` 返回 `{"ok":true,"wechat":true}`。本机改 API 后跑 `./scripts/deploy-api.sh`。
 2. `adb.exe devices` 有手机。不要 `adb reverse`。
 3. 需要装新包：`cd android && ./gradlew :app:assembleDebug`，再 `./scripts/install-phone.sh`。
-4. 改小程序：先改 WSL，再 rsync 到 `C:\Users\caoji\tv-controller`，用开发者工具打开 **Windows 目录**，编译一次。详情勾选「不校验合法域名」，并把 `https://armbian.caojian.shop` 写入 RequestDomain。
+4. 改小程序：先改 WSL，立刻 rsync 到 `D:\test`（见第 3 节），开发者工具打开的就是这个目录，文件一同步就会自动更新。详情勾选「不校验合法域名」，并把 `https://armbian.caojian.shop` 写入 RequestDomain。
 5. 模拟器首页应能看到「M6 Note」。批准时长后手机应回桌面；到期或 `action:lock` 后回锁屏。
 
 没有小程序时，用 https://armbian.caojian.shop:8787/ 或 curl 批准。
@@ -169,7 +174,7 @@ curl -sS -X POST https://armbian.caojian.shop:8787/api \
 3. **`urlCheck: false` 不够。** 测试号 `RequestDomain` 为空时，模拟器仍报 `request:fail url not in domain list`。需要详情勾选「不校验合法域名」，或把 `http://127.0.0.1` / `http://localhost` / 带端口的写入该工程的 DevTools `runtimeAttr.network.RequestDomain`（`%LOCALAPPDATA%\微信开发者工具\User Data\...\WeappLocalData\localstorage_*.json`，`projectpath` 对得上的那份）。
 4. **APK 明文 HTTP：** Device Owner 下 OkHttp 会 `CLEARTEXT communication not permitted`，必须走套接字回退。
 5. **不要把 Magisk / `su` / root 写进正式逻辑。** 索尼没有 root，测试机的 root 也不要用。截图对齐 atvTools：走系统合成器（无障碍 `takeScreenshot`），失败立刻回传原因，不要空转等到超时。
-6. **`LauncherAlias` 完成设置后关闭。** 桌面不再出现 TV Lock 图标。Device Owner 下 `setUninstallBlocked` 禁止卸载。`TvHomeAlias` 仅电视锁定时打开。
+6. **`LauncherAlias` 完成设置后关闭。** 桌面不再出现 TV Lock 图标。Device Owner 下只用 `setUninstallBlocked` 禁止卸载 **本应用**。**禁止** `DISALLOW_UNINSTALL_APPS`（会锁死整机所有应用卸载；索尼电视因此只能恢复出厂）。`TvHomeAlias` 仅电视锁定时打开。
 7. **卸载 Device Owner：** `adb.exe shell dpm remove-active-admin com.cjlhll.tvlock/.lock.LockAdminReceiver`。同包名重装会保留 Owner。
 
 ---
@@ -179,7 +184,7 @@ curl -sS -X POST https://armbian.caojian.shop:8787/api \
 - 状态机只改 `cloudfunctions/api/logic.js`，本机服务和云函数都引用它。改完跑 `logic.test.js`。
 - 设备鉴权不要放到小程序；小程序不能拿 `deviceSecret`。
 - 一期小程序默认本机 HTTPS（`https://armbian.caojian.shop:8787/api`）。未开通云开发前不要把主路径改回 `callFunction`。
-- 同步到 Windows 副本后再让用户编译；不要只改 WSL 就声称「小程序已更新」。
+- 改完 `miniprogram/` / `cloudfunctions/` / `project.config.json` 必须立刻同步到 `D:\test`（`/mnt/d/test`），再告诉用户可以看效果。不要只改 WSL 就声称「小程序已更新」。
 - 不要提交 `cloud/local-server/data.json`、`android/local.properties`、密钥、PIN 明文到公共远程（PIN `2468` 仅本机测试）。
 - 索尼适配：横屏 / `values-television` / 遥控器焦点 / `DREAMING_STOPPED` / Leanback，不要另起一个 APK。
 - 订阅消息：正式 AppID + `.env` 里的 `WECHAT_APPID` / `WECHAT_SECRET` + 模板 `SUBSCRIBE_TEMPLATE_ID`。家长先 `requestSubscribeMessage`，孩子再 `requestUnlock` / `wake`（申请时推送；批准成功不再推送）。不要把 AppSecret 写进仓库或小程序。详见 `docs/setup.md` 4.1。

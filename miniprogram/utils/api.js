@@ -139,6 +139,15 @@ function shortId(deviceId) {
   return id.length <= 8 ? id : id.slice(-8)
 }
 
+function todayWatchText(min) {
+  const n = Math.max(0, Math.round(Number(min) || 0))
+  if (n < 60) return n + ' 分钟'
+  const h = Math.floor(n / 60)
+  const m = n % 60
+  if (!m) return h + ' 小时'
+  return h + ' 小时 ' + m + ' 分钟'
+}
+
 module.exports = {
   call: call,
   getOpenid: getOpenid,
@@ -148,4 +157,5 @@ module.exports = {
   statusText: statusText,
   formText: formText,
   shortId: shortId,
+  todayWatchText: todayWatchText,
 }

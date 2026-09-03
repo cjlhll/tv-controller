@@ -8,6 +8,8 @@ android/.idea/
 *.apk
 *.ap_
 *.aab
+*.keystore
+*.jks
 captures/
 
 # Node / 云开发

@@ -10,9 +10,10 @@
         <view class="pill" bindtap="openPinDialog">{{device.pin || '未设置'}}</view>
       </view>
     </view>
+    <view class="device-watch">今日已看 {{todayWatchText}}</view>
   </view>
 
-  <view class="section-label">{{isUnlocked ? '延长使用时间' : '选择使用时长'}}</view>
+  <view class="section-label">{{isUnlocked ? '设置使用时间' : '选择使用时长'}}</view>
   <view class="grid">
     <view
       wx:for="{{presets}}"
@@ -24,8 +25,14 @@
   </view>
 
   <view class="section-label">自定义</view>
-  <view class="field">
-    <input class="input" type="number" value="{{customMin}}" bindinput="onCustom" />
+  <view class="field {{selectedKey === 'custom' ? 'field-on' : ''}}">
+    <input
+      class="input"
+      type="number"
+      value="{{customMin}}"
+      bindfocus="onCustomFocus"
+      bindinput="onCustom"
+    />
     <view class="unit">分钟</view>
   </view>
 
@@ -56,19 +63,23 @@
   </view>
 </view>
 
-<view wx:if="{{pinDialog}}" class="pin-mask" catchtap="closePinDialog">
+<view wx:if="{{pinDialog}}" class="pin-mask" catchtap="closePinDialog" catchtouchmove="keepPinDialog">
   <view class="pin-dialog" catchtap="keepPinDialog">
     <view class="pin-dialog-title">修改 PIN</view>
     <view class="hint">当前 {{device.pin || '未设置'}}，输入 4–6 位数字</view>
     <view class="field">
       <input
         class="input"
-        type="number"
+        type="digit"
         maxlength="6"
         focus
+        adjust-position="{{false}}"
+        hold-keyboard
+        confirm-type="done"
         placeholder="新 PIN"
         value="{{newPin}}"
         bindinput="onNewPin"
+        bindconfirm="savePin"
       />
     </view>
     <view class="row">

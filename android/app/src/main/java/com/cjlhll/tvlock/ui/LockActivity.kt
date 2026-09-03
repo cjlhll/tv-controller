@@ -56,7 +56,10 @@ class LockActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!TvLockApp.instance.prefs.setupDone) {
-            startActivity(Intent(this, SetupActivity::class.java))
+            startActivity(
+                Intent(this, SetupActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            )
             finish()
             return
         }
@@ -415,6 +418,10 @@ class LockActivity : AppCompatActivity() {
         )
         val input = dialog.findViewById<EditText>(R.id.pinInput)
         val error = dialog.findViewById<TextView>(R.id.pinError)
+        val minutes = pinDurationMin()
+        val durationText = pinDurationLabel(minutes)
+        dialog.findViewById<TextView>(R.id.pinHint).text = getString(R.string.pin_dialog_hint, durationText)
+        dialog.findViewById<Button>(R.id.pinConfirm).text = getString(R.string.pin_confirm, durationText)
         dialog.findViewById<Button>(R.id.pinCancel).setOnClickListener { dialog.dismiss() }
         if (LockController.isTelevision(this)) {
             dialog.setCancelable(true)
@@ -432,7 +439,7 @@ class LockActivity : AppCompatActivity() {
             dialog.dismiss()
             thread {
                 try {
-                    val res = client.pinUnlock(30)
+                    val res = client.pinUnlock(minutes)
                     val snap = client.snapshotFrom(res)
                     if (snap != null) SessionBus.post(snap)
                 } catch (e: Exception) {
@@ -445,6 +452,20 @@ class LockActivity : AppCompatActivity() {
         dialog.show()
         input.requestFocus()
         dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+    }
+
+    private fun pinDurationMin(): Int {
+        val fromSnap = SessionBus.last?.pinDurationMin ?: 0
+        if (fromSnap > 0) return fromSnap
+        return TvLockApp.instance.prefs.pinDurationMin
+    }
+
+    private fun pinDurationLabel(min: Int): String {
+        return when {
+            min < 60 -> "${min} 分钟"
+            min % 60 == 0 -> "${min / 60} 小时"
+            else -> "${min / 60} 小时 ${min % 60} 分钟"
+        }
     }
 
     private fun lockNow() {

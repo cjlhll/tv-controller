@@ -87,7 +87,7 @@ adb.exe shell dpm remove-active-admin com.cjlhll.tvlock/.lock.LockAdminReceiver
 
 **当前用正式 AppID `wx0ae9a52d7f29cc39`，仍走自建 API**，不走云开发。开发者工具必须打开这个号，不要再打开旧测试号。
 
-1. 用 **Windows 微信开发者工具** 打开 `C:\Users\caoji\tv-controller`（不要用 `\\wsl.localhost\...`，WSL 路径经常不重新编译 JS，会一直走旧的 `cloud.callFunction`）。云函数目录是 `cloudfunctions/api`。详情里勾选「不校验合法域名」。
+1. 用 **Windows 微信开发者工具** 打开 `D:\test`（不要用 `\\wsl.localhost\...`，WSL 路径经常不重新编译 JS）。WSL 改完小程序必须立刻同步到该目录，开发者工具才会自动更新。云函数目录是 `cloudfunctions/api`。详情里勾选「不校验合法域名」。
 2. `project.config.json` 已是正式 AppID `wx0ae9a52d7f29cc39`。
 3. 开通云开发，把环境 ID 写入：
    - [`miniprogram/env.js`](../miniprogram/env.js) 的 `cloudEnv`

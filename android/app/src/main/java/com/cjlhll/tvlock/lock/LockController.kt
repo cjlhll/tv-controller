@@ -99,8 +99,8 @@ object LockController {
     }
 
     fun hardenInstalledApp(context: Context) {
-        if (!TvLockApp.instance.prefs.setupDone) return
         hideLauncherIcon(context)
+        if (!TvLockApp.instance.prefs.setupDone) return
         blockUninstall(context)
         enableShotService(context)
     }
@@ -152,8 +152,9 @@ object LockController {
             } catch (_: Exception) {
             }
         }
+        // 只禁止卸载本应用。DISALLOW_UNINSTALL_APPS 会锁死整机所有应用卸载。
         try {
-            dpm.addUserRestriction(admin, android.os.UserManager.DISALLOW_UNINSTALL_APPS)
+            dpm.clearUserRestriction(admin, android.os.UserManager.DISALLOW_UNINSTALL_APPS)
         } catch (_: Exception) {
         }
     }
@@ -217,6 +218,7 @@ object LockController {
     }
 
     fun launchLock(context: Context, force: Boolean = false) {
+        if (!TvLockApp.instance.prefs.setupDone) return
         val last = SessionBus.last
         if (!force && last?.isUnlocked == true) return
         if (!force && lockForeground) return
@@ -266,6 +268,7 @@ object LockController {
     }
 
     fun shouldShowLock(snapshot: DeviceSnapshot?): Boolean {
+        if (!TvLockApp.instance.prefs.setupDone) return false
         if (snapshot == null) return true
         return !snapshot.isUnlocked
     }

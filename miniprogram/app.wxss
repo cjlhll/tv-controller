@@ -66,6 +66,14 @@ page {
   margin-top: 8rpx;
 }
 
+.device-watch {
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid #334155;
+  color: #94a3b8;
+  font-size: 24rpx;
+}
+
 .hw-specs {
   display: flex;
   flex-wrap: wrap;
@@ -226,6 +234,11 @@ page {
   font-weight: 600;
 }
 
+.field-on {
+  background: #422006;
+  border-color: #d97706;
+}
+
 .empty {
   padding: 64rpx 24rpx 40rpx;
   text-align: center;
@@ -305,10 +318,12 @@ page {
   bottom: 0;
   z-index: 40;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 48rpx;
-  background: rgba(15, 23, 42, 0.64);
+  justify-content: flex-start;
+  padding: 12vh 48rpx calc(48rpx + env(safe-area-inset-bottom));
+  background: rgba(2, 6, 23, 0.84);
+  box-sizing: border-box;
 }
 
 .pin-dialog {

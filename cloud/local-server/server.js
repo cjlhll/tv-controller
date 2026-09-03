@@ -253,7 +253,7 @@ function handleDevice(db, action, payload) {
   if (action === 'pinUnlock') {
     const { device: unlocked, minutes } = logic.applyApprove(
       device,
-      payload.durationMin || logic.DEFAULT_PIN_DURATION_MIN,
+      logic.pinUnlockMinutes(device),
       now
     )
     persistDevice(db, unlocked)
@@ -304,6 +304,15 @@ function handleUser(db, action, payload) {
   const device = getDevice(db, payload.deviceId)
   if (!device) return fail('NOT_FOUND', '设备不存在')
 
+  if (action === 'unbind') {
+    const idx = db.bindings.findIndex((b) => b.openid === openid && b.deviceId === device.deviceId)
+    if (idx < 0) return fail('FORBIDDEN', '未绑定该设备')
+    db.bindings.splice(idx, 1)
+    const result = logic.applyUnbind(device, now)
+    persistDevice(db, result.device)
+    addLog(db, { deviceId: device.deviceId, action: 'unbind', openid, createdAt: now })
+    return ok({ device: logic.publicDevice(result.device) })
+  }
   if (action === 'logs') {
     return ok({
       logs: db.logs.filter((l) => l.deviceId === device.deviceId).slice(0, 50),
@@ -320,6 +329,18 @@ function handleUser(db, action, payload) {
     persistDevice(db, result.device)
     addLog(db, { deviceId: device.deviceId, action: 'setPin', openid, createdAt: now })
     return ok({ device: logic.publicDevice(result.device) })
+  }
+  if (action === 'setPinDuration') {
+    const result = logic.applySetPinDuration(device, payload.durationMin, now)
+    persistDevice(db, result.device)
+    addLog(db, {
+      deviceId: device.deviceId,
+      action: 'setPinDuration',
+      openid,
+      durationMin: result.minutes,
+      createdAt: now,
+    })
+    return ok({ device: logic.publicDevice(result.device), minutes: result.minutes })
   }
   if (action === 'approve') {
     const { device: unlocked, minutes } = logic.applyApprove(device, payload.durationMin, now)
@@ -388,12 +409,14 @@ function dispatch(db, payload) {
   ])
   const userActions = new Set([
     'bind',
+    'unbind',
     'myDevices',
     'approve',
     'reject',
     'logs',
     'setDeviceName',
     'setPin',
+    'setPinDuration',
     'remoteLock',
     'requestScreenshot',
     'getScreenshot',
@@ -481,6 +504,7 @@ function adminPage() {
           <button onclick="act('\${d.deviceId}','approve',30)">30分钟</button>
           <button onclick="act('\${d.deviceId}','approve',60)">1小时</button>
           <button class="ghost" onclick="act('\${d.deviceId}','reject')">拒绝</button>
+          <button class="ghost" onclick="act('\${d.deviceId}','unbind')">解绑</button>
         </div>\`).join('')
     }
     load()

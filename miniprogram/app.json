@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/bind/bind",
     "pages/approve/approve",
+    "pages/settings/settings",
     "pages/logs/logs"
   ],
   "window": {

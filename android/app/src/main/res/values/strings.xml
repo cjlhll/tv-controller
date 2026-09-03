@@ -14,8 +14,8 @@
     <string name="notify_channel">锁定守护</string>
     <string name="notify_text">正在守护设备锁定状态</string>
     <string name="pin_dialog_title">家长 PIN</string>
-    <string name="pin_dialog_hint">验证后解锁 30 分钟</string>
-    <string name="pin_confirm">解锁 30 分钟</string>
+    <string name="pin_dialog_hint">验证后解锁 %1$s</string>
+    <string name="pin_confirm">解锁 %1$s</string>
     <string name="pin_cancel">取消</string>
     <string name="pin_error">PIN 不正确</string>
     <string name="shot_service_desc">用于家长远程查看当前屏幕，不会读取输入内容</string>

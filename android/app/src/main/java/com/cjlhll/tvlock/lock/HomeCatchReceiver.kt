@@ -7,6 +7,7 @@ import android.content.Intent
 class HomeCatchReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != Intent.ACTION_CLOSE_SYSTEM_DIALOGS) return
+        if (!com.cjlhll.tvlock.TvLockApp.instance.prefs.setupDone) return
         if (LockController.allowLeave) return
         if (!LockController.shouldShowLock(SessionBus.last)) return
         val reason = intent.getStringExtra("reason")

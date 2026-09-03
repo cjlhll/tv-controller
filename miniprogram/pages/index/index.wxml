@@ -5,23 +5,47 @@
   </view>
 
   <block wx:else>
-    <view class="kicker">点卡片批准时长，到期自动回锁。</view>
-    <view
-      wx:for="{{devices}}"
-      wx:key="deviceId"
-      class="dev-card dev-card-{{item.statusKind}}"
-      data-id="{{item.deviceId}}"
-      bindtap="goApprove"
-    >
-      <view class="dev-top">
-        <view class="dev-mark">{{item.formText}}</view>
-        <view class="dev-info">
-          <view class="dev-name">{{item.name}}</view>
-          <view class="dev-meta">{{item.shortId}} · {{item.onlineText}}</view>
-        </view>
-        <view class="dev-side">
-          <view class="dev-pill pill-{{item.statusKind}}">{{item.statusText}}</view>
-          <view class="dev-pill dev-log" data-id="{{item.deviceId}}" catchtap="goLogs">记录</view>
+    <view class="kicker">点卡片设置时长。右滑设置，左滑解绑。</view>
+    <view class="swipe-row" wx:for="{{devices}}" wx:key="deviceId">
+      <view class="swipe-actions swipe-actions-left">
+        <view
+          class="swipe-settings"
+          data-id="{{item.deviceId}}"
+          catchtap="onSettings"
+        >设置</view>
+      </view>
+      <view class="swipe-actions">
+        <view
+          class="swipe-unbind"
+          data-id="{{item.deviceId}}"
+          data-name="{{item.name}}"
+          catchtap="onUnbind"
+        >解绑</view>
+      </view>
+      <view
+        class="swipe-front {{item.swiping ? '' : 'swipe-anim'}}"
+        style="transform: translateX({{item.offset}}px);"
+        data-id="{{item.deviceId}}"
+        data-index="{{index}}"
+        bindtouchstart="onSwipeStart"
+        catchtouchmove="onSwipeMove"
+        bindtouchend="onSwipeEnd"
+        bindtouchcancel="onSwipeEnd"
+        bindtap="goApprove"
+      >
+        <view class="dev-card dev-card-{{item.statusKind}}">
+          <view class="dev-top">
+            <view class="dev-mark">{{item.formText}}</view>
+            <view class="dev-info">
+              <view class="dev-name">{{item.name}}</view>
+              <view class="dev-meta">{{item.shortId}} · {{item.onlineText}}</view>
+            </view>
+            <view class="dev-side">
+              <view class="dev-pill pill-{{item.statusKind}}">{{item.statusText}}</view>
+              <view class="dev-pill dev-log" data-id="{{item.deviceId}}" catchtap="goLogs">记录</view>
+            </view>
+          </view>
+          <view class="dev-watch">今日已看 {{item.todayWatchText}}</view>
         </view>
       </view>
     </view>

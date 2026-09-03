@@ -60,6 +60,7 @@ Page({
     selectedKey: '30',
     customMin: '45',
     approveLabel: '批准 30 分钟',
+    todayWatchText: '0 分钟',
     shotPath: '',
     shotHint: '',
     shotLoading: false,
@@ -79,6 +80,7 @@ Page({
       return
     }
     const statusKind = api.statusKind(device, now)
+    const isUnlocked = statusKind === 'unlocked'
     this.setData({
       device: {
         ...device,
@@ -87,8 +89,9 @@ Page({
       },
       statusKind,
       statusText: api.statusText(device, now, justApprovedMin),
-      isUnlocked: statusKind === 'unlocked',
-      approveLabel: this.labelFor(this.data.selectedKey, this.data.customMin, statusKind === 'unlocked'),
+      isUnlocked,
+      todayWatchText: api.todayWatchText(device.todayWatchMin),
+      approveLabel: this.labelFor(this.data.selectedKey, this.data.customMin, isUnlocked),
     })
   },
   refresh() {
@@ -99,13 +102,19 @@ Page({
   },
   selectPreset(e) {
     const key = e.currentTarget.dataset.key
+    wx.hideKeyboard()
     this.setData({
       selectedKey: key,
       approveLabel: this.labelFor(key, this.data.customMin, this.data.isUnlocked),
     })
   },
+  onCustomFocus() {
+    this.applyCustom(this.data.customMin)
+  },
   onCustom(e) {
-    const customMin = e.detail.value
+    this.applyCustom(e.detail.value)
+  },
+  applyCustom(customMin) {
     this.setData({
       customMin,
       selectedKey: 'custom',
@@ -121,25 +130,30 @@ Page({
     if (preset) return preset.minutes
     return Number(customMin)
   },
+  verbFor(isUnlocked) {
+    return isUnlocked ? '改为' : '批准'
+  },
   labelFor(key, customMin, isUnlocked) {
-    const verb = isUnlocked ? '续时' : '批准'
+    const minutes = this.minutesFor(key, customMin)
+    const verb = this.verbFor(isUnlocked)
     const preset = PRESETS.find((p) => p.key === key)
     if (preset) return `${verb} ${preset.label}`
-    const n = Number(customMin)
-    if (!n || n < 1) return `${verb}自定义时长`
-    return `${verb} ${n} 分钟`
+    if (!minutes || minutes < 1) return `${verb}自定义时长`
+    return `${verb} ${minutes} 分钟`
   },
   doApprove(durationMin) {
     if (!durationMin || durationMin < 1) {
       wx.showToast({ title: '时长无效', icon: 'none' })
       return
     }
-    wx.showLoading({ title: '批准中' })
+    wx.showLoading({ title: this.data.isUnlocked ? '设置中' : '批准中' })
     api
       .call('approve', { deviceId: this.data.deviceId, durationMin })
       .then((res) => {
         wx.hideLoading()
-        wx.showToast({ title: `已批准 ${durationMin} 分钟` })
+        wx.showToast({
+          title: `已${this.verbFor(this.data.isUnlocked)} ${durationMin} 分钟`,
+        })
         this.applyDevice(res.device, res.now, res.minutes || durationMin)
         if (env.subscribeTemplateId && !env.subscribeTemplateId.startsWith('YOUR_')) {
           wx.requestSubscribeMessage({ tmplIds: [env.subscribeTemplateId] })
@@ -185,6 +199,7 @@ Page({
     })
   },
   closePinDialog() {
+    wx.hideKeyboard({ fail() {} })
     this.setData({ pinDialog: false, newPin: '' })
   },
   keepPinDialog() {},
@@ -197,6 +212,7 @@ Page({
       wx.showToast({ title: 'PIN 须为 4–6 位数字', icon: 'none' })
       return
     }
+    wx.hideKeyboard({ fail() {} })
     wx.showLoading({ title: '保存中' })
     api
       .call('setPin', { deviceId: this.data.deviceId, pin })
