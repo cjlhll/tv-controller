@@ -15,3 +15,56 @@
 .settings-wrap .actions {
   margin-top: 36rpx;
 }
+
+.settings-switch-card {
+  margin-bottom: 36rpx;
+}
+
+.settings-switch-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.settings-switch-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-switch-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-bottom: 8rpx;
+}
+
+.settings-switch-row .hint {
+  margin-bottom: 0;
+}
+
+.lock-cmd {
+  margin-top: 28rpx;
+  padding: 20rpx 22rpx;
+  border-radius: 16rpx;
+  background: #0f172a;
+  border: 2rpx solid #334155;
+}
+
+.lock-cmd-on {
+  opacity: 0.82;
+}
+
+.lock-cmd-label {
+  font-size: 22rpx;
+  color: #94a3b8;
+  margin-bottom: 10rpx;
+}
+
+.lock-cmd-text {
+  font-size: 22rpx;
+  line-height: 1.55;
+  color: #e2e8f0;
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

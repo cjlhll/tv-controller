@@ -60,6 +60,7 @@ Page({
     selectedKey: '30',
     customMin: '45',
     approveLabel: '批准 30 分钟',
+    todayUnlockText: '0 分钟',
     todayWatchText: '0 分钟',
     shotPath: '',
     shotHint: '',
@@ -90,6 +91,9 @@ Page({
       statusKind,
       statusText: api.statusText(device, now, justApprovedMin),
       isUnlocked,
+      todayUnlockText: api.todayWatchText(
+        device.todayUnlockMin != null ? device.todayUnlockMin : device.todayWatchMin
+      ),
       todayWatchText: api.todayWatchText(device.todayWatchMin),
       approveLabel: this.labelFor(this.data.selectedKey, this.data.customMin, isUnlocked),
     })

@@ -15,6 +15,7 @@ data class DeviceSnapshot(
     val screenshotAt: Long = 0,
     val pin: String = "",
     val pinDurationMin: Int = 30,
+    val allowUninstall: Boolean = false,
 ) {
     val isUnlocked: Boolean
         get() = status == "unlocked" && unlockUntil > System.currentTimeMillis()
@@ -39,6 +40,7 @@ data class DeviceSnapshot(
                 screenshotAt = obj.optLong("screenshotAt", device.optLong("screenshotAt")),
                 pin = device.optString("pin"),
                 pinDurationMin = device.optInt("pinDurationMin", 30).coerceIn(1, 24 * 60),
+                allowUninstall = device.optBoolean("allowUninstall", false),
             )
         }
     }

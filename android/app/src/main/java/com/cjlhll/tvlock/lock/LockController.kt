@@ -7,6 +7,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
@@ -100,7 +101,7 @@ object LockController {
 
     fun hardenInstalledApp(context: Context) {
         if (!TvLockApp.instance.prefs.setupDone) return
-        blockUninstall(context)
+        applyUninstallPolicy(context)
         enableShotService(context)
     }
 
@@ -167,32 +168,73 @@ object LockController {
     }
 
     fun syncLauncherIcon(context: Context, bound: Boolean) {
-        if (!TvLockApp.instance.prefs.setupDone || !bound) {
+        val allow = TvLockApp.instance.prefs.allowUninstall
+        if (!TvLockApp.instance.prefs.setupDone || !bound || allow) {
             showLauncherIcon(context)
         } else {
             hideLauncherIcon(context)
         }
     }
 
-    fun blockUninstall(context: Context) {
+    fun applyUninstallPolicy(context: Context, allowUninstall: Boolean = TvLockApp.instance.prefs.allowUninstall) {
         val dpm = context.getSystemService(DevicePolicyManager::class.java)
         if (!dpm.isDeviceOwnerApp(context.packageName)) return
         val admin = adminComponent(context)
         try {
-            dpm.setUninstallBlocked(admin, context.packageName, true)
+            dpm.setUninstallBlocked(admin, context.packageName, !allowUninstall)
         } catch (_: Exception) {
         }
         if (Build.VERSION.SDK_INT >= 30) {
             try {
-                dpm.setUserControlDisabledPackages(admin, listOf(context.packageName))
+                dpm.setUserControlDisabledPackages(
+                    admin,
+                    if (allowUninstall) emptyList() else listOf(context.packageName),
+                )
             } catch (_: Exception) {
             }
         }
-        // 只禁止卸载本应用。DISALLOW_UNINSTALL_APPS 会锁死整机所有应用卸载。
         try {
             dpm.clearUserRestriction(admin, android.os.UserManager.DISALLOW_UNINSTALL_APPS)
         } catch (_: Exception) {
         }
+        // Device Owner 时系统卸载会进「设备管理应用」且「停用」是灰的。
+        // 要出「要卸载此应用吗？」必须先解除 Owner。APK 不能自己再设回来。
+        if (allowUninstall) {
+            releaseDeviceOwner(context)
+        }
+    }
+
+    fun startSystemUninstall(context: Context) {
+        if (!TvLockApp.instance.prefs.allowUninstall) return
+        applyUninstallPolicy(context, true)
+        releaseDeviceOwner(context)
+        val intent = Intent(Intent.ACTION_DELETE).apply {
+            data = Uri.parse("package:${context.packageName}")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun releaseDeviceOwner(context: Context) {
+        val dpm = context.getSystemService(DevicePolicyManager::class.java)
+        if (!dpm.isDeviceOwnerApp(context.packageName)) return
+        val admin = adminComponent(context)
+        try {
+            @Suppress("DEPRECATION")
+            dpm.clearDeviceOwnerApp(context.packageName)
+        } catch (_: Exception) {
+        }
+        try {
+            dpm.removeActiveAdmin(admin)
+        } catch (_: Exception) {
+        }
+    }
+
+    fun blockUninstall(context: Context) {
+        applyUninstallPolicy(context, false)
     }
 
     private fun setComponentEnabled(context: Context, className: String, enabled: Boolean) {
@@ -247,11 +289,13 @@ object LockController {
         }
     }
 
-    fun canLaunchLock(context: Context): Boolean {
+    fun isScreenOn(context: Context): Boolean {
         if (tvStandby) return false
         val pm = context.getSystemService(PowerManager::class.java)
         return pm.isInteractive
     }
+
+    fun canLaunchLock(context: Context): Boolean = isScreenOn(context)
 
     fun launchLock(context: Context, force: Boolean = false) {
         if (!TvLockApp.instance.prefs.setupDone) return

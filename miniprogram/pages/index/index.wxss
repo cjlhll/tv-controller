@@ -178,24 +178,11 @@
   opacity: 0.8;
 }
 
-.fab-mask {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 30;
-  background: rgba(15, 23, 42, 0.48);
-}
-
 .fab {
   position: fixed;
   right: 36rpx;
   bottom: calc(40rpx + env(safe-area-inset-bottom));
   z-index: 31;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: flex-end;
 }
 
 .fab-main {
@@ -209,34 +196,8 @@
   text-align: center;
   font-weight: 300;
   box-shadow: 0 16rpx 36rpx rgba(15, 23, 42, 0.45);
-  transition: transform 0.22s ease;
 }
 
-.fab-main-on {
-  transform: rotate(135deg);
-}
-
-.fab-item {
-  margin-bottom: 16rpx;
-  padding: 0 28rpx;
-  height: 72rpx;
-  line-height: 72rpx;
-  border-radius: 999rpx;
-  background: #1e293b;
-  border: 2rpx solid #475569;
-  color: #f1f5f9;
-  font-size: 26rpx;
-  font-weight: 600;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(24rpx) rotate(-8deg);
-  transform-origin: right center;
-  transition: opacity 0.2s ease, transform 0.22s ease;
-  white-space: nowrap;
-}
-
-.fab-item-on {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0) rotate(0deg);
+.fab-main:active {
+  opacity: 0.88;
 }

@@ -85,6 +85,10 @@ class AppPrefs(context: Context) {
         return true
     }
 
+    var allowUninstall: Boolean
+        get() = sp.getBoolean("allowUninstall", false)
+        set(value) { sp.edit().putBoolean("allowUninstall", value).apply() }
+
     var pinDurationMin: Int
         get() {
             val stored = sp.getInt("pinDurationMin", 30)

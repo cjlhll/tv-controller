@@ -6,6 +6,7 @@ import com.cjlhll.tvlock.TvLockApp
 import com.cjlhll.tvlock.data.AppPrefs
 import com.cjlhll.tvlock.data.DeviceInfo
 import com.cjlhll.tvlock.data.DeviceSnapshot
+import com.cjlhll.tvlock.lock.LockController
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -30,6 +31,7 @@ class CloudClient(private val prefs: AppPrefs) {
             .put("name", prefs.deviceName)
             .put("form", detectForm())
             .put("hw", DeviceInfo.toJson(ctx))
+            .put("deviceOwner", LockController.isDeviceOwner(ctx))
         if (prefs.deviceId.isNotEmpty() && prefs.deviceSecret.isNotEmpty()) {
             extra.put("deviceId", prefs.deviceId)
             extra.put("deviceSecret", prefs.deviceSecret)
@@ -47,9 +49,9 @@ class CloudClient(private val prefs: AppPrefs) {
 
     fun refreshPair(): JSONObject = post("refreshPair")
 
-    fun state(): JSONObject = post("state", JSONObject().put("hw", DeviceInfo.toJson(TvLockApp.instance)))
+    fun state(): JSONObject = post("state", deviceExtras())
 
-    fun wake(): JSONObject = post("wake", JSONObject().put("hw", DeviceInfo.toJson(TvLockApp.instance)))
+    fun wake(): JSONObject = post("wake", deviceExtras())
 
     fun requestUnlock(): JSONObject = post("requestUnlock")
 
@@ -73,6 +75,14 @@ class CloudClient(private val prefs: AppPrefs) {
         post("uploadScreenshot", JSONObject().put("error", message), timeoutMs = 8000)
 
     fun snapshotFrom(res: JSONObject): DeviceSnapshot? = DeviceSnapshot.from(res)
+
+    private fun deviceExtras(): JSONObject {
+        val ctx = TvLockApp.instance
+        return JSONObject()
+            .put("hw", DeviceInfo.toJson(ctx))
+            .put("deviceOwner", LockController.isDeviceOwner(ctx))
+            .put("screenOn", LockController.isScreenOn(ctx))
+    }
 
     private fun post(
         action: String,

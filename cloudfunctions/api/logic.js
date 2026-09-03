@@ -54,6 +54,11 @@ function publicDevice(device, now = nowMs(), opts = {}) {
   if (device.hw) out.hw = device.hw
   out.pin = device.pin || ''
   out.pinDurationMin = (device.pinDurationMin > 0 ? device.pinDurationMin : DEFAULT_PIN_DURATION_MIN)
+  out.allowUninstall = !!device.allowUninstall
+  if (device.deviceOwner === true || device.deviceOwner === false) {
+    out.deviceOwner = device.deviceOwner
+  }
+  out.todayUnlockMin = todayUnlockMinutes(device, now)
   out.todayWatchMin = todayWatchMinutes(device, now)
   if (opts.includeCommand) {
     out.pendingCommand = effectiveCommand(device, now)
@@ -69,12 +74,36 @@ function expireIfNeeded(device, now) {
   if (!device) return device
   rollTodayWatch(device, now)
   if (device.status === 'unlocked' && (device.unlockUntil || 0) > 0 && now >= device.unlockUntil) {
-    closeWatchSession(device, device.unlockUntil)
+    closeUsageSessions(device, device.unlockUntil)
     device.status = 'locked'
     device.unlockUntil = 0
     device.expiredJustNow = true
   }
   return device
+}
+
+function isUnlockedNow(device, now) {
+  return !!(device && device.status === 'unlocked' && (device.unlockUntil || 0) > now)
+}
+
+function parseScreenOn(payload) {
+  if (!payload) return undefined
+  if (payload.screenOn === true || payload.screenOn === 'true' || payload.screenOn === 1 || payload.screenOn === '1') {
+    return true
+  }
+  if (payload.screenOn === false || payload.screenOn === 'false' || payload.screenOn === 0 || payload.screenOn === '0') {
+    return false
+  }
+  return undefined
+}
+
+function migrateUsageFields(device) {
+  if (device.todayUnlockMs == null) {
+    device.todayUnlockMs = device.todayWatchMs || 0
+  }
+  if (!(device.unlockSessionStart > 0) && (device.watchSessionStart || 0) > 0) {
+    device.unlockSessionStart = device.watchSessionStart
+  }
 }
 
 function shanghaiDate(ts) {
@@ -89,56 +118,115 @@ function shanghaiMidnight(ts) {
   return Date.parse(`${shanghaiDate(ts)}T00:00:00+08:00`)
 }
 
-function rollTodayWatch(device, now) {
-  if (!device) return device
+function rollTodayDate(device, now) {
+  migrateUsageFields(device)
   const day = shanghaiDate(now)
   if (device.todayWatchDate !== day) {
+    const midnight = shanghaiMidnight(now)
     if ((device.watchSessionStart || 0) > 0) {
-      device.watchSessionStart = Math.max(device.watchSessionStart, shanghaiMidnight(now))
+      device.watchSessionStart = Math.max(device.watchSessionStart, midnight)
+    }
+    if ((device.unlockSessionStart || 0) > 0) {
+      device.unlockSessionStart = Math.max(device.unlockSessionStart, midnight)
     }
     device.todayWatchMs = 0
+    device.todayUnlockMs = 0
     device.todayWatchDate = day
   }
-  if (
-    device.status === 'unlocked' &&
-    (device.unlockUntil || 0) > now &&
-    !(device.watchSessionStart > 0)
-  ) {
+}
+
+function ensureUsageSessions(device, now) {
+  if (!isUnlockedNow(device, now)) return
+  if (!(device.unlockSessionStart > 0)) {
+    device.unlockSessionStart = now
+  }
+  if (device.screenOn !== false && !(device.watchSessionStart > 0)) {
     device.watchSessionStart = now
   }
+}
+
+function rollTodayWatch(device, now) {
+  if (!device) return device
+  rollTodayDate(device, now)
+  ensureUsageSessions(device, now)
+  return device
+}
+
+function closeSession(device, endAt, startKey, msKey) {
+  if (!device) return device
+  rollTodayDate(device, endAt)
+  const start = device[startKey] || 0
+  if (start > 0 && endAt > start) {
+    device[msKey] = (device[msKey] || 0) + (endAt - start)
+  }
+  device[startKey] = 0
   return device
 }
 
 function closeWatchSession(device, endAt) {
-  if (!device) return device
-  rollTodayWatch(device, endAt)
-  const start = device.watchSessionStart || 0
-  if (start > 0 && endAt > start) {
-    device.todayWatchMs = (device.todayWatchMs || 0) + (endAt - start)
-  }
-  device.watchSessionStart = 0
+  return closeSession(device, endAt, 'watchSessionStart', 'todayWatchMs')
+}
+
+function closeUnlockSession(device, endAt) {
+  return closeSession(device, endAt, 'unlockSessionStart', 'todayUnlockMs')
+}
+
+function closeUsageSessions(device, endAt) {
+  closeWatchSession(device, endAt)
+  closeUnlockSession(device, endAt)
   return device
 }
 
-function startWatchSession(device, now) {
+function startUsageSessions(device, now) {
   rollTodayWatch(device, now)
-  device.watchSessionStart = now
+  device.unlockSessionStart = now
+  if (device.screenOn !== false) {
+    device.watchSessionStart = now
+  } else {
+    device.watchSessionStart = 0
+  }
   return device
 }
 
-function todayWatchMinutes(device, now) {
+function applyScreenPresence(device, payload, now) {
+  if (!device) return device
+  const screenOn = parseScreenOn(payload)
+  if (screenOn === undefined) {
+    rollTodayWatch(device, now)
+    return device
+  }
+  device.screenOn = screenOn
+  rollTodayWatch(device, now)
+  if (!isUnlockedNow(device, now)) return device
+  if (screenOn) {
+    if (!(device.watchSessionStart > 0)) device.watchSessionStart = now
+  } else {
+    closeWatchSession(device, now)
+  }
+  return device
+}
+
+function liveMinutes(device, now, storedMs, sessionStart) {
   if (!device) return 0
   const day = shanghaiDate(now)
-  let ms = device.todayWatchDate === day ? device.todayWatchMs || 0 : 0
-  let start = device.watchSessionStart || 0
+  let ms = device.todayWatchDate === day ? storedMs || 0 : 0
+  let start = sessionStart || 0
   if (device.todayWatchDate !== day && start > 0) {
     start = Math.max(start, shanghaiMidnight(now))
   }
-  if (device.status === 'unlocked' && (device.unlockUntil || 0) > now && start > 0) {
+  if (isUnlockedNow(device, now) && start > 0) {
     ms += Math.max(0, now - start)
   }
   const min = Math.round(ms / 60000)
   return min > 0 ? min : 0
+}
+
+function todayWatchMinutes(device, now) {
+  return liveMinutes(device, now, device && device.todayWatchMs, device && device.watchSessionStart)
+}
+
+function todayUnlockMinutes(device, now) {
+  return liveMinutes(device, now, device && device.todayUnlockMs, device && device.unlockSessionStart)
 }
 
 function followsSystemName(name, prevModel) {
@@ -146,8 +234,17 @@ function followsSystemName(name, prevModel) {
   return !!prevModel && name === prevModel
 }
 
+function applyCapabilities(device, payload) {
+  if (!device || !payload) return device
+  if (payload.deviceOwner === true || payload.deviceOwner === false) {
+    device.deviceOwner = payload.deviceOwner === true
+  }
+  return device
+}
+
 function applyHardware(device, payload) {
   if (!device || !payload) return device
+  applyCapabilities(device, payload)
   const src = payload.hw && typeof payload.hw === 'object' ? payload.hw : null
   if (!src) return device
   const os = clip(src.os, 32)
@@ -184,6 +281,17 @@ function applySetPinDuration(device, durationMin, now) {
   return { device, minutes: device.pinDurationMin }
 }
 
+function parseAllowUninstall(value) {
+  if (value === true || value === 'true' || value === 1 || value === '1') return true
+  return false
+}
+
+function applySetAllowUninstall(device, allowUninstall, now) {
+  device.allowUninstall = parseAllowUninstall(allowUninstall)
+  device.onlineAt = now
+  return { device, allowUninstall: device.allowUninstall }
+}
+
 function pinUnlockMinutes(device) {
   return normalizeDurationMin(device && device.pinDurationMin)
 }
@@ -211,6 +319,7 @@ function applyRegister(existing, payload, now) {
     existing.form = payload.form || existing.form
     existing.onlineAt = now
     applyHardware(existing, payload)
+    applyCapabilities(existing, payload)
     expireIfNeeded(existing, now)
     applyIncomingPin(existing, payload, now, true)
     return existing
@@ -232,12 +341,16 @@ function applyRegister(existing, payload, now) {
     lastNotifyAt: 0,
     onlineAt: now,
     boundCount: 0,
+    allowUninstall: false,
     todayWatchMs: 0,
+    todayUnlockMs: 0,
     todayWatchDate: '',
     watchSessionStart: 0,
+    unlockSessionStart: 0,
     createdAt: now,
   }
   applyHardware(created, payload)
+  applyCapabilities(created, payload)
   applyIncomingPin(created, payload, now, false)
   return created
 }
@@ -256,7 +369,7 @@ function applyWake(device, now) {
   if (device.status === 'unlocked' && (device.unlockUntil || 0) > now) {
     return { device, notify: false, reason: 'still_unlocked' }
   }
-  closeWatchSession(device, now)
+  closeUsageSessions(device, now)
   if (device.status === 'unbound') {
     return { device, notify: false, reason: 'unbound' }
   }
@@ -274,7 +387,7 @@ function applyRequestUnlock(device, now) {
   if (device.status === 'unlocked' && (device.unlockUntil || 0) > now) {
     return { device, notify: false, reason: 'still_unlocked' }
   }
-  closeWatchSession(device, now)
+  closeUsageSessions(device, now)
   if (device.status === 'unbound') {
     return { device, notify: false, reason: 'unbound' }
   }
@@ -287,17 +400,17 @@ function applyRequestUnlock(device, now) {
 function applyApprove(device, durationMin, now) {
   expireIfNeeded(device, now)
   const minutes = normalizeDurationMin(durationMin)
-  if (device.watchSessionStart) closeWatchSession(device, now)
+  if (device.watchSessionStart || device.unlockSessionStart) closeUsageSessions(device, now)
   device.status = 'unlocked'
   device.unlockUntil = now + minutes * 60 * 1000
   device.onlineAt = now
-  startWatchSession(device, now)
+  startUsageSessions(device, now)
   return { device, minutes }
 }
 
 function applyReject(device, now) {
   expireIfNeeded(device, now)
-  closeWatchSession(device, now)
+  closeUsageSessions(device, now)
   device.status = 'locked'
   device.unlockUntil = 0
   device.onlineAt = now
@@ -306,7 +419,7 @@ function applyReject(device, now) {
 
 function applyLock(device, now) {
   expireIfNeeded(device, now)
-  closeWatchSession(device, now)
+  closeUsageSessions(device, now)
   device.status = device.boundCount > 0 || device.status !== 'unbound' ? 'locked' : 'unbound'
   if (device.boundCount > 0) device.status = 'locked'
   device.unlockUntil = 0
@@ -335,7 +448,7 @@ function applyUnbind(device, now) {
   device.boundCount = Math.max(0, (device.boundCount || 0) - 1)
   if (device.boundCount === 0) {
     expireIfNeeded(device, now)
-    closeWatchSession(device, now)
+    closeUsageSessions(device, now)
     device.status = 'unbound'
     device.unlockUntil = 0
     applyRefreshPair(device, now)
@@ -398,11 +511,15 @@ module.exports = {
   expireIfNeeded,
   rollTodayWatch,
   todayWatchMinutes,
+  todayUnlockMinutes,
+  applyScreenPresence,
   applyHardware,
+  applyCapabilities,
   normalizePin,
   normalizeDurationMin,
   applySetPin,
   applySetPinDuration,
+  applySetAllowUninstall,
   pinUnlockMinutes,
   applyRegister,
   applyRefreshPair,

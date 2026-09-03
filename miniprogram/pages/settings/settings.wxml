@@ -4,6 +4,26 @@
     <view class="device-meta">{{device.formText}} · {{device.shortId}}</view>
   </view>
 
+  <view class="section-label">卸载保护</view>
+  <view class="card settings-switch-card">
+    <view class="settings-switch-row">
+      <view class="settings-switch-text">
+        <view class="settings-switch-title">允许卸载本应用</view>
+        <view class="hint">{{uninstallHint}}</view>
+      </view>
+        <switch
+        checked="{{allowUninstall}}"
+        disabled="{{uninstallBusy}}"
+        color="#d97706"
+        bindchange="onAllowUninstall"
+      />
+    </view>
+    <view class="lock-cmd" hover-class="lock-cmd-on" bindtap="copyLockOwnerCmd">
+      <view class="lock-cmd-label">加锁命令 · 点按复制</view>
+      <view class="lock-cmd-text">{{lockOwnerCmd}}</view>
+    </view>
+  </view>
+
   <view class="section-label">PIN 解锁默认时长</view>
   <view class="hint settings-hint">本机输入 PIN 后按此时长解锁，可随时改。</view>
   <view class="grid">

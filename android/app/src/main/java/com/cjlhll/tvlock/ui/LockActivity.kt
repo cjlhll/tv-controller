@@ -88,6 +88,7 @@ class LockActivity : AppCompatActivity() {
         binding.pinButton.setOnClickListener { askPin() }
         binding.refreshButton.setOnClickListener { refreshPair() }
         binding.lockNowButton.setOnClickListener { lockNow() }
+        binding.uninstallButton.setOnClickListener { LockController.startSystemUninstall(this) }
         binding.title.setOnLongClickListener {
             LockController.allowLeave = true
             startActivity(Intent(this, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_FORCE, true))
@@ -243,6 +244,8 @@ class LockActivity : AppCompatActivity() {
                 if (showPair) showQr(snap.copy(pairToken = pairToken))
             }
         }
+        binding.uninstallButton.visibility =
+            if (snap.allowUninstall || TvLockApp.instance.prefs.allowUninstall) View.VISIBLE else View.GONE
     }
 
     private fun restorePairCache() {

@@ -149,3 +149,4 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 - `logs`
 - `setDeviceName`
 - `setPin`（`deviceId`, 4–6 位数字 `pin`；`myDevices` 会返回当前 PIN）
+- `setAllowUninstall`（`deviceId`, 布尔 `allowUninstall`；默认禁止卸载本应用，仅 Device Owner 生效）

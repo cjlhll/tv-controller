@@ -7,6 +7,6 @@ import android.content.Intent
 class LockAdminReceiver : DeviceAdminReceiver() {
     override fun onEnabled(context: Context, intent: Intent) {
         LockController.prepareLockTask(context)
-        LockController.blockUninstall(context)
+        LockController.applyUninstallPolicy(context)
     }
 }

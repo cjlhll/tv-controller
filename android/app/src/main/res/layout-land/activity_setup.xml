@@ -237,11 +237,30 @@
                 android:focusedByDefault="true"
                 android:minHeight="56dp"
                 android:nextFocusUp="@id/backButton"
+                android:nextFocusDown="@id/uninstallButton"
                 android:nextFocusLeft="@id/pin"
                 android:text="保存并进入锁屏"
                 android:textAllCaps="false"
                 android:textColor="@color/accent_on"
                 android:textSize="@dimen/body_size"
+                app:backgroundTint="@null" />
+
+            <Button
+                android:id="@+id/uninstallButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/btn_danger"
+                android:defaultFocusHighlightEnabled="false"
+                android:focusable="true"
+                android:minHeight="56dp"
+                android:nextFocusUp="@id/saveButton"
+                android:nextFocusLeft="@id/pin"
+                android:text="@string/uninstall_app"
+                android:textAllCaps="false"
+                android:textColor="@color/danger"
+                android:textSize="@dimen/body_size"
+                android:visibility="gone"
                 app:backgroundTint="@null" />
         </LinearLayout>
     </LinearLayout>

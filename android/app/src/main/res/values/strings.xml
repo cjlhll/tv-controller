@@ -10,6 +10,7 @@
     <string name="request_unlock">申请解锁</string>
     <string name="refresh_pair">刷新配对码</string>
     <string name="lock_now">立即回锁</string>
+    <string name="uninstall_app">卸载本应用</string>
     <string name="setup_title">初始设置</string>
     <string name="notify_channel">锁定守护</string>
     <string name="notify_text">正在守护设备锁定状态</string>

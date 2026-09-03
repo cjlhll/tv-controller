@@ -10,7 +10,7 @@
         <view class="pill" bindtap="openPinDialog">{{device.pin || '未设置'}}</view>
       </view>
     </view>
-    <view class="device-watch">今日已看 {{todayWatchText}}</view>
+    <view class="device-watch">今日解锁时间 {{todayUnlockText}}，观看时间 {{todayWatchText}}</view>
   </view>
 
   <view class="section-label">{{isUnlocked ? '设置使用时间' : '选择使用时长'}}</view>

@@ -45,25 +45,13 @@
               <view class="dev-pill dev-log" data-id="{{item.deviceId}}" catchtap="goLogs">记录</view>
             </view>
           </view>
-          <view class="dev-watch">今日已看 {{item.todayWatchText}}</view>
+          <view class="dev-watch">今日解锁时间 {{item.todayUnlockText}}，观看时间 {{item.todayWatchText}}</view>
         </view>
       </view>
     </view>
   </block>
 </view>
 
-<view wx:if="{{fabOpen}}" class="fab-mask" bindtap="closeFab"></view>
 <view class="fab">
-  <view class="fab-main {{fabOpen ? 'fab-main-on' : ''}}" bindtap="toggleFab">+</view>
-  <view
-    class="fab-item {{fabOpen ? 'fab-item-on' : ''}}"
-    style="transition-delay: {{fabOpen ? '40ms' : '0ms'}}"
-    bindtap="goBind"
-  >绑定新设备</view>
-  <view
-    wx:if="{{canSubscribe}}"
-    class="fab-item {{fabOpen ? 'fab-item-on' : ''}}"
-    style="transition-delay: {{fabOpen ? '90ms' : '0ms'}}"
-    bindtap="subscribe"
-  >接收打开提醒</view>
+  <view class="fab-main" bindtap="goBind">+</view>
 </view>

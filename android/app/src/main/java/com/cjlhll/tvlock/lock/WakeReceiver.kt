@@ -12,6 +12,9 @@ class WakeReceiver : BroadcastReceiver() {
             -> {
                 DeviceCommands.rememberLockedFrame()
                 LockController.tvStandby = true
+                if (com.cjlhll.tvlock.TvLockApp.instance.prefs.setupDone) {
+                    LockService.start(context, reportWake = false)
+                }
             }
             Intent.ACTION_SCREEN_ON,
             Intent.ACTION_DREAMING_STOPPED,

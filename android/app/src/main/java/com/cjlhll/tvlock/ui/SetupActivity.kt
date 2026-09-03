@@ -72,6 +72,7 @@ class SetupActivity : AppCompatActivity() {
             }
         }
         binding.saveButton.setOnClickListener { save() }
+        binding.uninstallButton.setOnClickListener { LockController.startSystemUninstall(this) }
         if (LockController.isTelevision(this)) {
             binding.saveButton.requestFocus()
         }
@@ -87,6 +88,8 @@ class SetupActivity : AppCompatActivity() {
         val owner = if (LockController.isDeviceOwner(this)) "已是 Device Owner，可 Lock Task" else "尚未 Device Owner（基础档）"
         val overlay = if (Settings.canDrawOverlays(this)) "叠加层已授权" else "叠加层未授权"
         binding.ownerStatus.text = "$owner\n$overlay"
+        val allow = TvLockApp.instance.prefs.allowUninstall
+        binding.uninstallButton.visibility = if (allow) View.VISIBLE else View.GONE
     }
 
     private fun save() {

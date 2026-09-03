@@ -11,6 +11,7 @@ const ACTION = {
   pin: '本机 PIN 解锁',
   setPin: '修改 PIN',
   setPinDuration: 'PIN 解锁时长',
+  setAllowUninstall: '卸载保护',
   lock: '回锁',
 }
 

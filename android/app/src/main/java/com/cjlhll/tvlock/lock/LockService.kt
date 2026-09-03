@@ -117,6 +117,7 @@ class LockService : Service() {
                 if (snap.pinDurationMin > 0) {
                     prefs.pinDurationMin = snap.pinDurationMin
                 }
+                prefs.allowUninstall = snap.allowUninstall
                 SessionBus.post(snap)
                 handleRemoteCommand(snap.pendingCommand)
                 val localExpired = snap.status == "unlocked" &&

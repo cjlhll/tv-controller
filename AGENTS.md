@@ -59,9 +59,9 @@ Device Owner + Lock Task：锁定时 Home / 最近任务无效；解锁 `stopLoc
 | 调用方 | action | 鉴权 |
 |---|---|---|
 | 设备 | `register` `refreshPair` `wake` `state` `heartbeat` `pinUnlock` `lock` `requestUnlock` `ackCommand` `uploadScreenshot` | `deviceId` + `deviceSecret`（`register` 可首次不带） |
-| 家长 | `login` `bind` `myDevices` `approve` `reject` `logs` `setDeviceName` `setPin` `remoteLock` `requestScreenshot` `getScreenshot` | 小程序 `wx.login` → `login` 换真实 openid；本机审批页用 `local-parent` |
+| 家长 | `login` `bind` `myDevices` `approve` `reject` `logs` `setDeviceName` `setPin` `setPinDuration` `setAllowUninstall` `remoteLock` `requestScreenshot` `getScreenshot` | 小程序 `wx.login` → `login` 换真实 openid；本机审批页用 `local-parent` |
 
-`bind` 需要 `pairToken`。`approve` 需要 `deviceId` + `durationMin`。`setPin` 需要 `deviceId` + 4–6 位数字 `pin`；`myDevices` 会带上当前 `pin`。
+`bind` 需要 `pairToken`。`approve` 需要 `deviceId` + `durationMin`。`setPin` 需要 `deviceId` + 4–6 位数字 `pin`；`myDevices` 会带上当前 `pin`。`setAllowUninstall` 需要 `deviceId` + 布尔 `allowUninstall`（默认禁止卸载本应用；仅 Device Owner 生效）。`myDevices` / `state` 会带 `allowUninstall` 和设备上报的 `deviceOwner`。
 
 联调 openid：
 

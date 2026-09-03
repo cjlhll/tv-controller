@@ -185,6 +185,7 @@ async function handleDevice(action, payload) {
   if (action === 'state' || action === 'heartbeat') {
     device.onlineAt = now
     logic.applyHardware(device, payload)
+    logic.applyScreenPresence(device, payload, now)
     await saveDevice(device)
     return ok({ device: logic.publicDevice(device, now, { includeCommand: true }) })
   }
@@ -199,6 +200,7 @@ async function handleDevice(action, payload) {
     logic.applyHardware(device, payload)
     const result =
       action === 'requestUnlock' ? logic.applyRequestUnlock(device, now) : logic.applyWake(device, now)
+    logic.applyScreenPresence(result.device, payload, now)
     await saveDevice(result.device)
     await addLog({
       deviceId: device.deviceId,
@@ -294,6 +296,7 @@ async function handleUser(action, payload, openid) {
     action === 'setDeviceName' ||
     action === 'setPin' ||
     action === 'setPinDuration' ||
+    action === 'setAllowUninstall' ||
     action === 'remoteLock' ||
     action === 'requestScreenshot' ||
     action === 'getScreenshot'
@@ -334,6 +337,19 @@ async function handleUser(action, payload, openid) {
       await saveDevice(result.device)
       await addLog({ deviceId: device.deviceId, action: 'setPin', openid, createdAt: now })
       return ok({ device: logic.publicDevice(result.device) })
+    }
+
+    if (action === 'setAllowUninstall') {
+      const result = logic.applySetAllowUninstall(device, payload.allowUninstall, now)
+      await saveDevice(result.device)
+      await addLog({
+        deviceId: device.deviceId,
+        action: 'setAllowUninstall',
+        openid,
+        detail: result.allowUninstall ? '允许卸载' : '禁止卸载',
+        createdAt: now,
+      })
+      return ok({ device: logic.publicDevice(result.device), allowUninstall: result.allowUninstall })
     }
 
     if (action === 'setPinDuration') {
@@ -418,6 +434,7 @@ const USER_ACTIONS = new Set([
   'setDeviceName',
   'setPin',
   'setPinDuration',
+  'setAllowUninstall',
   'remoteLock',
   'requestScreenshot',
   'getScreenshot',

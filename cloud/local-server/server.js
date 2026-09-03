@@ -199,6 +199,7 @@ function handleDevice(db, action, payload) {
   if (action === 'state' || action === 'heartbeat') {
     device.onlineAt = now
     logic.applyHardware(device, payload)
+    logic.applyScreenPresence(device, payload, now)
     persistDevice(db, device)
     return ok({ device: logic.publicDevice(device, now, { includeCommand: true }) })
   }
@@ -230,6 +231,7 @@ function handleDevice(db, action, payload) {
     logic.applyHardware(device, payload)
     const result =
       action === 'requestUnlock' ? logic.applyRequestUnlock(device, now) : logic.applyWake(device, now)
+    logic.applyScreenPresence(result.device, payload, now)
     persistDevice(db, result.device)
     addLog(db, {
       deviceId: device.deviceId,
@@ -330,6 +332,18 @@ function handleUser(db, action, payload) {
     addLog(db, { deviceId: device.deviceId, action: 'setPin', openid, createdAt: now })
     return ok({ device: logic.publicDevice(result.device) })
   }
+  if (action === 'setAllowUninstall') {
+    const result = logic.applySetAllowUninstall(device, payload.allowUninstall, now)
+    persistDevice(db, result.device)
+    addLog(db, {
+      deviceId: device.deviceId,
+      action: 'setAllowUninstall',
+      openid,
+      detail: result.allowUninstall ? '允许卸载' : '禁止卸载',
+      createdAt: now,
+    })
+    return ok({ device: logic.publicDevice(result.device), allowUninstall: result.allowUninstall })
+  }
   if (action === 'setPinDuration') {
     const result = logic.applySetPinDuration(device, payload.durationMin, now)
     persistDevice(db, result.device)
@@ -417,6 +431,7 @@ function dispatch(db, payload) {
     'setDeviceName',
     'setPin',
     'setPinDuration',
+    'setAllowUninstall',
     'remoteLock',
     'requestScreenshot',
     'getScreenshot',
@@ -477,6 +492,11 @@ function adminPage() {
       if (!r.ok) alert(r.message)
       load()
     }
+    async function setAllowUninstall(deviceId, allowUninstall) {
+      const r = await api({ action:'setAllowUninstall', deviceId, allowUninstall, openid:'local-parent' })
+      if (!r.ok) alert(r.message)
+      load()
+    }
     function remain(u) {
       const ms = (u||0) - Date.now()
       if (ms <= 0) return ''
@@ -497,9 +517,11 @@ function adminPage() {
             + '<div class="spec"><kbd>运存</kbd><span>' + (d.hw.ram || '-') + '</span></div>'
             + '<div class="spec"><kbd>存储</kbd><span>' + (d.hw.storage || '-') + '</span></div>'
             + '</div>' : '<p class="muted">等待设备上报规格</p>'}
-          <div class="muted">PIN \${d.pin || '未设置'}</div>
+          <div class="muted">今日解锁 \${d.todayUnlockMin || 0} 分钟 · 今日观看 \${d.todayWatchMin || 0} 分钟</div>
+          <div class="muted">PIN \${d.pin || '未设置'} · \${d.allowUninstall ? '可卸载' : '禁止卸载'}\${d.deviceOwner ? '' : '（尚未 Owner）'}</div>
           <input id="pin-\${d.deviceId}" maxlength="6" placeholder="新PIN" style="width:96px"/>
           <button class="ghost" onclick="setPin('\${d.deviceId}')">改PIN</button>
+          <button class="ghost" onclick="setAllowUninstall('\${d.deviceId}', \${!d.allowUninstall})">\${d.allowUninstall ? '禁止卸载' : '允许卸载'}</button>
           <button onclick="act('\${d.deviceId}','approve',15)">15分钟</button>
           <button onclick="act('\${d.deviceId}','approve',30)">30分钟</button>
           <button onclick="act('\${d.deviceId}','approve',60)">1小时</button>

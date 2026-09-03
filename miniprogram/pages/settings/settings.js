@@ -1,5 +1,7 @@
 const api = require('../../utils/api')
 
+const LOCK_OWNER_CMD = 'adb shell dpm set-device-owner com.cjlhll.tvlock/.lock.LockAdminReceiver'
+
 const PRESETS = [
   { key: '15', label: '15 分钟', minutes: 15 },
   { key: '30', label: '30 分钟', minutes: 30 },
@@ -15,6 +17,10 @@ Page({
     selectedKey: '30',
     customMin: '30',
     saveLabel: '保存为 30 分钟',
+    allowUninstall: false,
+    uninstallBusy: false,
+    uninstallHint: '',
+    lockOwnerCmd: LOCK_OWNER_CMD,
   },
   onLoad(query) {
     this.setData({ deviceId: query.deviceId || '' })
@@ -33,6 +39,7 @@ Page({
       const min = device.pinDurationMin > 0 ? device.pinDurationMin : 30
       const preset = PRESETS.find((p) => p.minutes === min)
       const key = preset ? preset.key : 'custom'
+      const allowUninstall = !!device.allowUninstall
       this.setData({
         device: {
           ...device,
@@ -42,6 +49,8 @@ Page({
         selectedKey: key,
         customMin: String(min),
         saveLabel: this.labelFor(key, String(min)),
+        allowUninstall,
+        uninstallHint: this.uninstallHint(device, allowUninstall),
       })
     })
   },
@@ -75,6 +84,80 @@ Page({
     const minutes = this.minutesFor(key, customMin)
     if (!minutes || minutes < 1) return '保存默认时长'
     return `保存为 ${api.todayWatchText(minutes)}`
+  },
+  uninstallHint(device, allowUninstall) {
+    if (!device || device.deviceOwner !== true && device.deviceOwner !== false) {
+      return allowUninstall
+        ? '已记下允许卸载。等设备上线后确认能否生效。'
+        : '已记下禁止卸载。等设备上线后确认系统能不能执行。'
+    }
+    if (device.deviceOwner !== true) {
+      return allowUninstall
+        ? '已记下允许卸载。此设备还不是 Device Owner，系统无法禁止卸载。'
+        : '已记下禁止卸载。此设备还不是 Device Owner，需要先设 Owner 才能真正禁止。'
+    }
+    return allowUninstall
+      ? '打开后设备会解除 Device Owner，系统设置才会弹出「要卸载此应用吗？」。关掉后若要再禁止，需要电脑重新设 Owner，应用自己做不到。'
+      : '仅禁止卸载本应用，不影响其它应用。'
+  },
+  onAllowUninstall(e) {
+    const allow = !!(e.detail && e.detail.value)
+    if (allow === this.data.allowUninstall) return
+    if (allow) {
+      wx.showModal({
+        title: '允许卸载？',
+        content: '打开后设备会解除 Device Owner，系统卸载才会出现「要卸载此应用吗？」。应用不能自己再设回 Owner；关掉开关若要再禁止，需要电脑 adb 重新设置。',
+        success: (res) => {
+          if (res.confirm) this.saveAllowUninstall(true)
+          else this.setData({ allowUninstall: false })
+        },
+      })
+      return
+    }
+    this.saveAllowUninstall(false)
+  },
+  copyLockOwnerCmd() {
+    wx.setClipboardData({
+      data: LOCK_OWNER_CMD,
+      success() {
+        wx.hideToast()
+        wx.showToast({ title: '已复制加锁命令' })
+      },
+      fail() {
+        wx.showToast({ title: '复制失败', icon: 'none' })
+      },
+    })
+  },
+  saveAllowUninstall(allowUninstall) {
+    if (this.data.uninstallBusy) return
+    this.setData({ uninstallBusy: true, allowUninstall })
+    api
+      .call('setAllowUninstall', { deviceId: this.data.deviceId, allowUninstall })
+      .then((res) => {
+        const device = (res && res.device) || this.data.device
+        const next = !!(res && res.allowUninstall)
+        this.setData({
+          uninstallBusy: false,
+          allowUninstall: next,
+          device: device
+            ? {
+                ...this.data.device,
+                ...device,
+                formText: api.formText(device.form),
+                shortId: api.shortId(device.deviceId),
+              }
+            : this.data.device,
+          uninstallHint: this.uninstallHint(device || this.data.device, next),
+        })
+        wx.showToast({ title: next ? '已允许卸载' : '已禁止卸载' })
+      })
+      .catch((err) => {
+        this.setData({
+          uninstallBusy: false,
+          allowUninstall: !allowUninstall,
+        })
+        wx.showToast({ title: err.message, icon: 'none' })
+      })
   },
   save() {
     const durationMin = this.minutesFor(this.data.selectedKey, this.data.customMin)
