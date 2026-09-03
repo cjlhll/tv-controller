@@ -100,8 +100,8 @@ object LockController {
     }
 
     fun hardenInstalledApp(context: Context) {
-        if (!TvLockApp.instance.prefs.setupDone) return
         applyUninstallPolicy(context)
+        if (!TvLockApp.instance.prefs.setupDone) return
         enableShotService(context)
     }
 
@@ -174,6 +174,24 @@ object LockController {
         } else {
             hideLauncherIcon(context)
         }
+        syncPackageHidden(context, bound)
+    }
+
+    /** 绑定完成且禁止卸载时，从系统/索尼桌面应用列表隐藏整包（含 Emotion UI 添加快捷应用）。 */
+    fun syncPackageHidden(context: Context, bound: Boolean) {
+        val prefs = TvLockApp.instance.prefs
+        val hide = prefs.setupDone && bound && !prefs.allowUninstall && isDeviceOwner(context)
+        setPackageHidden(context, hide)
+    }
+
+    private fun setPackageHidden(context: Context, hidden: Boolean) {
+        if (!isDeviceOwner(context)) return
+        try {
+            val dpm = context.getSystemService(DevicePolicyManager::class.java)
+            // Device Owner 同时是 active device admin，系统会拒绝 hide（log: has active device admin）。
+            dpm.setApplicationHidden(adminComponent(context), context.packageName, hidden)
+        } catch (_: Exception) {
+        }
     }
 
     fun applyUninstallPolicy(context: Context, allowUninstall: Boolean = TvLockApp.instance.prefs.allowUninstall) {
@@ -197,10 +215,12 @@ object LockController {
             dpm.clearUserRestriction(admin, android.os.UserManager.DISALLOW_UNINSTALL_APPS)
         } catch (_: Exception) {
         }
-        // Device Owner 时系统卸载会进「设备管理应用」且「停用」是灰的。
-        // 要出「要卸载此应用吗？」必须先解除 Owner。APK 不能自己再设回来。
         if (allowUninstall) {
+            setPackageHidden(context, false)
             releaseDeviceOwner(context)
+        } else {
+            val bound = SessionBus.last?.isUnbound == false
+            syncPackageHidden(context, bound)
         }
     }
 

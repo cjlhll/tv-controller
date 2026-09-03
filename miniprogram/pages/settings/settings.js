@@ -1,6 +1,9 @@
 const api = require('../../utils/api')
 
-const LOCK_OWNER_CMD = 'adb shell dpm set-device-owner com.cjlhll.tvlock/.lock.LockAdminReceiver'
+const LOCK_OWNER_CMDS = {
+  shell: 'dpm set-device-owner com.cjlhll.tvlock/.lock.LockAdminReceiver',
+  adb: 'adb shell dpm set-device-owner com.cjlhll.tvlock/.lock.LockAdminReceiver',
+}
 
 const PRESETS = [
   { key: '15', label: '15 分钟', minutes: 15 },
@@ -20,7 +23,8 @@ Page({
     allowUninstall: false,
     uninstallBusy: false,
     uninstallHint: '',
-    lockOwnerCmd: LOCK_OWNER_CMD,
+    lockOwnerCmdShell: LOCK_OWNER_CMDS.shell,
+    lockOwnerCmdAdb: LOCK_OWNER_CMDS.adb,
   },
   onLoad(query) {
     this.setData({ deviceId: query.deviceId || '' })
@@ -97,7 +101,7 @@ Page({
         : '已记下禁止卸载。此设备还不是 Device Owner，需要先设 Owner 才能真正禁止。'
     }
     return allowUninstall
-      ? '打开后设备会解除 Device Owner，系统设置才会弹出「要卸载此应用吗？」。关掉后若要再禁止，需要电脑重新设 Owner，应用自己做不到。'
+      ? '打开后电视需 TV Lock 在线轮询一次才会解除 Owner，系统卸载才会成功。若图标已隐藏，请重启电视或 atvtools 执行 am start -n com.cjlhll.tvlock/.ui.LockActivity。'
       : '仅禁止卸载本应用，不影响其它应用。'
   },
   onAllowUninstall(e) {
@@ -116,12 +120,15 @@ Page({
     }
     this.saveAllowUninstall(false)
   },
-  copyLockOwnerCmd() {
+  copyLockOwnerCmd(e) {
+    const kind = (e.currentTarget.dataset.kind || 'shell')
+    const text = LOCK_OWNER_CMDS[kind] || LOCK_OWNER_CMDS.shell
+    const toast = kind === 'adb' ? '已复制电脑 adb 命令' : '已复制电视 shell 命令'
     wx.setClipboardData({
-      data: LOCK_OWNER_CMD,
+      data: text,
       success() {
         wx.hideToast()
-        wx.showToast({ title: '已复制加锁命令' })
+        wx.showToast({ title: toast })
       },
       fail() {
         wx.showToast({ title: '复制失败', icon: 'none' })

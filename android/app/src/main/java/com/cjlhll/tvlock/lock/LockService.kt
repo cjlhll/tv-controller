@@ -39,7 +39,7 @@ class LockService : Service() {
         client = CloudClient(TvLockApp.instance.prefs)
         createChannel()
         startForeground(NOTIF_ID, buildNotification("正在守护锁定状态"))
-        if (!TvLockApp.instance.prefs.setupDone) {
+        if (!TvLockApp.instance.prefs.setupDone && !LockController.isDeviceOwner(this)) {
             stopSelf()
             return
         }
@@ -71,7 +71,7 @@ class LockService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!TvLockApp.instance.prefs.setupDone) {
+        if (!TvLockApp.instance.prefs.setupDone && !LockController.isDeviceOwner(this)) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -100,11 +100,28 @@ class LockService : Service() {
 
     private fun tick() {
         val prefs = TvLockApp.instance.prefs
-        if (!prefs.setupDone) return
+        val ownerOnly = !prefs.setupDone && LockController.isDeviceOwner(this)
+        if (!prefs.setupDone && !ownerOnly) return
         val shouldWake = pollWake
         pollWake = false
         io.execute {
             try {
+                if (ownerOnly) {
+                    if (prefs.deviceId.isEmpty()) {
+                        val reg = client.register()
+                        client.snapshotFrom(reg)?.let { SessionBus.post(it) }
+                    }
+                    val res = client.state()
+                    val snap = client.snapshotFrom(res)
+                    if (snap != null) {
+                        prefs.allowUninstall = snap.allowUninstall
+                        main.post {
+                            LockController.applyUninstallPolicy(this)
+                            LockController.syncLauncherIcon(this, !snap.isUnbound)
+                        }
+                    }
+                    return@execute
+                }
                 if (prefs.deviceId.isEmpty()) {
                     val reg = client.register()
                     client.snapshotFrom(reg)?.let { SessionBus.post(it) }

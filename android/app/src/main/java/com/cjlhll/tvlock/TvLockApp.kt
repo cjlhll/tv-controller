@@ -21,6 +21,8 @@ class TvLockApp : Application() {
         if (prefs.setupDone) {
             LockController.hardenInstalledApp(this)
             LockService.start(this)
+        } else if (LockController.isDeviceOwner(this)) {
+            LockService.start(this)
         }
     }
 

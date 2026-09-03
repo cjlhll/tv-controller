@@ -18,9 +18,14 @@
         bindchange="onAllowUninstall"
       />
     </view>
-    <view class="lock-cmd" hover-class="lock-cmd-on" bindtap="copyLockOwnerCmd">
-      <view class="lock-cmd-label">加锁命令 · 点按复制</view>
-      <view class="lock-cmd-text">{{lockOwnerCmd}}</view>
+    <view class="hint lock-cmd-note">加锁前请先关闭上方「允许卸载」。索尼 Emotion UI 的「添加快捷应用」仍可能列出本应用（系统不允许隐藏 Device Owner）；已.pin 的快捷需手动删。菜单里若出现卸载，禁止生效时应卸不掉。</view>
+    <view class="lock-cmd" hover-class="lock-cmd-on" bindtap="copyLockOwnerCmd" data-kind="shell">
+      <view class="lock-cmd-label">atvtools / 电视 shell · 点按复制</view>
+      <view class="lock-cmd-text">{{lockOwnerCmdShell}}</view>
+    </view>
+    <view class="lock-cmd lock-cmd-second" hover-class="lock-cmd-on" bindtap="copyLockOwnerCmd" data-kind="adb">
+      <view class="lock-cmd-label">电脑 adb · 点按复制</view>
+      <view class="lock-cmd-text">{{lockOwnerCmdAdb}}</view>
     </view>
   </view>
 

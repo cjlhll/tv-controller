@@ -6,7 +6,8 @@ import android.content.Intent
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        if (!com.cjlhll.tvlock.TvLockApp.instance.prefs.setupDone) return
+        val prefs = com.cjlhll.tvlock.TvLockApp.instance.prefs
+        if (!prefs.setupDone && !LockController.isDeviceOwner(context)) return
         LockService.start(context)
     }
 }

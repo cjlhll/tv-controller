@@ -4,6 +4,7 @@ set -euo pipefail
 candidates=(
   "adb.exe"
   "/mnt/c/adb/platform-tools/adb.exe"
+  "/mnt/c/Users/caoji/platform-tools-tmp/platform-tools/adb.exe"
   "/mnt/c/Users/caoji/AppData/Local/Android/Sdk/platform-tools/adb.exe"
   "/mnt/c/Android/platform-tools/adb.exe"
   "/mnt/c/platform-tools/adb.exe"
