@@ -13,7 +13,11 @@ class TvLockApp : Application() {
         super.onCreate()
         instance = this
         prefs = AppPrefs(this)
-        LockController.hideLauncherIcon(this)
+        if (prefs.launcherHidden) {
+            LockController.hideLauncherIcon(this)
+        } else if (!prefs.setupDone) {
+            LockController.showLauncherIcon(this)
+        }
         if (prefs.setupDone) {
             LockController.hardenInstalledApp(this)
             LockService.start(this)

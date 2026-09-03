@@ -131,6 +131,7 @@ class LockService : Service() {
                 }
                 main.post {
                     LockController.hardenInstalledApp(this)
+                    LockController.syncLauncherIcon(this, !snap.isUnbound)
                     val locked = LockController.shouldShowLock(SessionBus.last)
                     LockVolumeGuard.sync(this, locked)
                     if (locked) {

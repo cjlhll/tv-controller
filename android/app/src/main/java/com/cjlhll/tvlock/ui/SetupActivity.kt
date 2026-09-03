@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.cjlhll.tvlock.TvLockApp
@@ -54,12 +55,26 @@ class SetupActivity : AppCompatActivity() {
                 Toast.makeText(this, "已忽略电池优化", Toast.LENGTH_SHORT).show()
             }
         }
+        if (LockController.isTelevision(this)) {
+            binding.batteryButton.visibility = View.GONE
+            binding.overlayButton.nextFocusDownId = binding.saveButton.id
+            binding.saveButton.nextFocusUpId = binding.overlayButton.id
+        }
         if (prefs.setupDone) {
-            binding.backButton.visibility = android.view.View.VISIBLE
+            binding.backButton.visibility = View.VISIBLE
             binding.saveButton.text = "保存并返回锁屏"
             binding.backButton.setOnClickListener { goLock() }
+            if (LockController.isTelevision(this)) {
+                binding.overlayButton.nextFocusDownId = binding.backButton.id
+                binding.backButton.nextFocusUpId = binding.overlayButton.id
+                binding.backButton.nextFocusDownId = binding.saveButton.id
+                binding.saveButton.nextFocusUpId = binding.backButton.id
+            }
         }
         binding.saveButton.setOnClickListener { save() }
+        if (LockController.isTelevision(this)) {
+            binding.saveButton.requestFocus()
+        }
     }
 
     override fun onResume() {

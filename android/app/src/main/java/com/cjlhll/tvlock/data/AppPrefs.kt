@@ -37,6 +37,10 @@ class AppPrefs(context: Context) {
         get() = sp.getBoolean("setupDone", false)
         set(value) { sp.edit().putBoolean("setupDone", value).apply() }
 
+    var launcherHidden: Boolean
+        get() = sp.getBoolean("launcherHidden", false)
+        set(value) { sp.edit().putBoolean("launcherHidden", value).apply() }
+
     var homeRoleAsked: Boolean
         get() = sp.getBoolean("homeRoleAsked", false)
         set(value) { sp.edit().putBoolean("homeRoleAsked", value).apply() }

@@ -99,7 +99,6 @@ object LockController {
     }
 
     fun hardenInstalledApp(context: Context) {
-        hideLauncherIcon(context)
         if (!TvLockApp.instance.prefs.setupDone) return
         blockUninstall(context)
         enableShotService(context)
@@ -135,7 +134,44 @@ object LockController {
     }
 
     fun hideLauncherIcon(context: Context) {
-        setComponentEnabled(context, LAUNCHER_ALIAS, false)
+        val pm = context.packageManager
+        val cn = ComponentName(context, LAUNCHER_ALIAS)
+        val prefs = TvLockApp.instance.prefs
+        try {
+            val alreadyHidden =
+                pm.getComponentEnabledSetting(cn) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            // 索尼等桌面会把已禁用入口留成黑图标，直到再收到一次组件变更。
+            if (alreadyHidden && !prefs.launcherHidden) {
+                pm.setComponentEnabledSetting(
+                    cn,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP,
+                )
+            } else if (alreadyHidden) {
+                prefs.launcherHidden = true
+                return
+            }
+            pm.setComponentEnabledSetting(
+                cn,
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP,
+            )
+            prefs.launcherHidden = true
+        } catch (_: Exception) {
+        }
+    }
+
+    fun showLauncherIcon(context: Context) {
+        setComponentEnabled(context, LAUNCHER_ALIAS, true)
+        TvLockApp.instance.prefs.launcherHidden = false
+    }
+
+    fun syncLauncherIcon(context: Context, bound: Boolean) {
+        if (!TvLockApp.instance.prefs.setupDone || !bound) {
+            showLauncherIcon(context)
+        } else {
+            hideLauncherIcon(context)
+        }
     }
 
     fun blockUninstall(context: Context) {

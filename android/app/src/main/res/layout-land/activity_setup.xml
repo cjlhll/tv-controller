@@ -9,28 +9,58 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="@dimen/lock_pad">
+        android:baselineAligned="false"
+        android:gravity="top"
+        android:orientation="horizontal"
+        android:padding="32dp">
 
         <LinearLayout
-            android:layout_width="@dimen/action_col_width"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="32dp"
+            android:layout_weight="1.35"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textColor="@color/muted"
+                android:textSize="@dimen/brand_size"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:text="@string/setup_title"
                 android:textColor="@color/text"
                 android:textSize="@dimen/title_size"
                 android:textStyle="bold" />
 
             <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="用遥控器上下选择，确定键确认"
+                android:textColor="@color/muted"
+                android:textSize="@dimen/body_size" />
+
+            <TextView
                 android:id="@+id/ownerStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:textColor="@color/muted"
+                android:textSize="@dimen/body_size" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="服务器地址"
                 android:textColor="@color/muted"
                 android:textSize="@dimen/body_size" />
 
@@ -38,63 +68,122 @@
                 android:id="@+id/serverUrl"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/bg_card"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
                 android:focusable="true"
-                android:hint="服务器地址"
+                android:focusableInTouchMode="true"
+                android:hint="https://"
+                android:imeOptions="actionNext"
                 android:inputType="textUri"
-                android:minHeight="@dimen/btn_min_height"
+                android:minHeight="56dp"
                 android:nextFocusDown="@id/deviceName"
-                android:padding="12dp"
+                android:nextFocusRight="@id/saveButton"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
                 android:textColor="@color/text"
                 android:textColorHint="@color/muted"
                 android:textSize="@dimen/body_size" />
 
-            <EditText
-                android:id="@+id/deviceName"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:focusable="true"
-                android:hint="设备名称"
-                android:minHeight="@dimen/btn_min_height"
-                android:nextFocusUp="@id/serverUrl"
-                android:nextFocusDown="@id/pin"
-                android:padding="12dp"
-                android:textColor="@color/text"
-                android:textColorHint="@color/muted"
-                android:textSize="@dimen/body_size" />
+                android:baselineAligned="false"
+                android:orientation="horizontal">
 
-            <EditText
-                android:id="@+id/pin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:focusable="true"
-                android:hint="家长 PIN（4-6 位数字）"
-                android:inputType="numberPassword"
-                android:maxLength="6"
-                android:minHeight="@dimen/btn_min_height"
-                android:nextFocusUp="@id/deviceName"
-                android:nextFocusDown="@id/overlayButton"
-                android:padding="12dp"
-                android:textColor="@color/text"
-                android:textColorHint="@color/muted"
-                android:textSize="@dimen/body_size" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:layout_weight="1.2"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="设备名称"
+                        android:textColor="@color/muted"
+                        android:textSize="@dimen/body_size" />
+
+                    <EditText
+                        android:id="@+id/deviceName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:hint="电视名称"
+                        android:imeOptions="actionNext"
+                        android:minHeight="56dp"
+                        android:nextFocusUp="@id/serverUrl"
+                        android:nextFocusDown="@id/pin"
+                        android:nextFocusRight="@id/pin"
+                        android:paddingLeft="16dp"
+                        android:paddingRight="16dp"
+                        android:textColor="@color/text"
+                        android:textColorHint="@color/muted"
+                        android:textSize="@dimen/body_size" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.8"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="家长 PIN（4–6 位）"
+                        android:textColor="@color/muted"
+                        android:textSize="@dimen/body_size" />
+
+                    <EditText
+                        android:id="@+id/pin"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_input"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:hint="应急解锁"
+                        android:imeOptions="actionDone"
+                        android:inputType="numberPassword"
+                        android:maxLength="6"
+                        android:minHeight="56dp"
+                        android:nextFocusUp="@id/serverUrl"
+                        android:nextFocusLeft="@id/deviceName"
+                        android:nextFocusDown="@id/overlayButton"
+                        android:nextFocusRight="@id/saveButton"
+                        android:paddingLeft="16dp"
+                        android:paddingRight="16dp"
+                        android:textColor="@color/text"
+                        android:textColorHint="@color/muted"
+                        android:textSize="@dimen/body_size" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="0.7"
+            android:orientation="vertical">
 
             <Button
                 android:id="@+id/overlayButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
                 android:background="@drawable/btn_ghost"
+                android:defaultFocusHighlightEnabled="false"
                 android:focusable="true"
-                android:minHeight="@dimen/btn_min_height"
+                android:minHeight="56dp"
                 android:nextFocusUp="@id/pin"
                 android:nextFocusDown="@id/batteryButton"
-                android:text="授予叠加层权限（唤醒拉起锁屏）"
+                android:nextFocusLeft="@id/pin"
+                android:text="授予叠加层权限"
                 android:textAllCaps="false"
                 android:textColor="@color/text"
                 android:textSize="@dimen/body_size"
@@ -106,10 +195,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/btn_ghost"
+                android:defaultFocusHighlightEnabled="false"
                 android:focusable="true"
-                android:minHeight="@dimen/btn_min_height"
+                android:minHeight="56dp"
                 android:nextFocusUp="@id/overlayButton"
                 android:nextFocusDown="@id/backButton"
+                android:nextFocusLeft="@id/pin"
                 android:text="忽略电池优化"
                 android:textAllCaps="false"
                 android:textColor="@color/text"
@@ -122,10 +213,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/btn_ghost"
+                android:defaultFocusHighlightEnabled="false"
                 android:focusable="true"
-                android:minHeight="@dimen/btn_min_height"
+                android:minHeight="56dp"
                 android:nextFocusUp="@id/batteryButton"
                 android:nextFocusDown="@id/saveButton"
+                android:nextFocusLeft="@id/pin"
                 android:text="返回锁屏"
                 android:textAllCaps="false"
                 android:textColor="@color/text"
@@ -137,12 +230,14 @@
                 android:id="@+id/saveButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:background="@drawable/btn_primary"
+                android:defaultFocusHighlightEnabled="false"
                 android:focusable="true"
                 android:focusedByDefault="true"
-                android:minHeight="@dimen/btn_min_height"
+                android:minHeight="56dp"
                 android:nextFocusUp="@id/backButton"
+                android:nextFocusLeft="@id/pin"
                 android:text="保存并进入锁屏"
                 android:textAllCaps="false"
                 android:textColor="@color/accent_on"

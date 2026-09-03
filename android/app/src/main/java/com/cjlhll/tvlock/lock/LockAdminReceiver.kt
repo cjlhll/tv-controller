@@ -8,6 +8,5 @@ class LockAdminReceiver : DeviceAdminReceiver() {
     override fun onEnabled(context: Context, intent: Intent) {
         LockController.prepareLockTask(context)
         LockController.blockUninstall(context)
-        LockController.hideLauncherIcon(context)
     }
 }

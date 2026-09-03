@@ -43,6 +43,7 @@ class LockActivity : AppCompatActivity() {
     private val idleSleepRunnable = Runnable { goIdleSleep() }
 
     private val listener: (DeviceSnapshot) -> Unit = { snap ->
+        LockController.syncLauncherIcon(this, !snap.isUnbound)
         render(snap)
         if (snap.isUnlocked) {
             cancelIdleSleep()
@@ -93,7 +94,10 @@ class LockActivity : AppCompatActivity() {
             true
         }
         maybeAskHomeRole()
-        SessionBus.last?.let { render(it) }
+        SessionBus.last?.let {
+            LockController.syncLauncherIcon(this, !it.isUnbound)
+            render(it)
+        }
         val last = SessionBus.last
         if (last == null || last.isUnbound || keepPairVisible) {
             val remaining = extraPairExpireAt - System.currentTimeMillis()
