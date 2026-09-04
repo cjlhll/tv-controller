@@ -14,6 +14,7 @@ import com.cjlhll.tvlock.TvLockApp
 import com.cjlhll.tvlock.databinding.ActivitySetupBinding
 import com.cjlhll.tvlock.lock.LockController
 import com.cjlhll.tvlock.lock.LockService
+import com.cjlhll.tvlock.lock.ShotService
 import com.cjlhll.tvlock.net.CloudClient
 import kotlin.concurrent.thread
 
@@ -87,7 +88,8 @@ class SetupActivity : AppCompatActivity() {
         if (!::binding.isInitialized) return
         val owner = if (LockController.isDeviceOwner(this)) "已是 Device Owner，可 Lock Task" else "尚未 Device Owner（基础档）"
         val overlay = if (Settings.canDrawOverlays(this)) "叠加层已授权" else "叠加层未授权"
-        binding.ownerStatus.text = "$owner\n$overlay"
+        val shot = if (ShotService.instance != null) "截图服务已打开" else "截图服务未打开"
+        binding.ownerStatus.text = "$owner\n$overlay\n$shot"
         val allow = TvLockApp.instance.prefs.allowUninstall
         binding.uninstallButton.visibility = if (allow) View.VISIBLE else View.GONE
     }

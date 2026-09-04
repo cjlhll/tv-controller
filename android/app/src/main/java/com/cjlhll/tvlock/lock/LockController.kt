@@ -1,10 +1,12 @@
 package com.cjlhll.tvlock.lock
 
+import android.Manifest
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -13,6 +15,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.cjlhll.tvlock.R
@@ -35,6 +38,15 @@ object LockController {
 
     private const val HOME_ALIAS = "com.cjlhll.tvlock.TvHomeAlias"
     private const val LAUNCHER_ALIAS = "com.cjlhll.tvlock.LauncherAlias"
+    private const val TAG = "TvLock"
+    private const val SHOT_RETRY_FAST_MS = 2_000L
+    private const val SHOT_RETRY_SLOW_MS = 30_000L
+
+    @Volatile
+    private var nextShotEnableAt = 0L
+
+    @Volatile
+    private var shotEnableNeedsBounce = false
 
     fun adminComponent(context: Context): ComponentName =
         ComponentName(context, LockAdminReceiver::class.java)
@@ -101,37 +113,107 @@ object LockController {
 
     fun hardenInstalledApp(context: Context) {
         applyUninstallPolicy(context)
-        if (!TvLockApp.instance.prefs.setupDone) return
         enableShotService(context)
     }
 
     fun enableShotService(context: Context) {
-        val cn = ComponentName(context, ShotService::class.java)
-        val name = cn.flattenToString()
-        if (isDeviceOwner(context)) {
+        if (ShotService.instance != null) {
+            shotEnableNeedsBounce = false
             try {
-                val dpm = context.getSystemService(DevicePolicyManager::class.java)
-                val admin = adminComponent(context)
+                persistShotServiceSettings(context)
+            } catch (_: Exception) {
+            }
+            return
+        }
+        val now = SystemClock.uptimeMillis()
+        if (now < nextShotEnableAt) return
+        nextShotEnableAt = now + SHOT_RETRY_FAST_MS
+
+        val cn = ComponentName(context, ShotService::class.java)
+        val longName = cn.flattenToString()
+        grantWriteSecureSettings(context)
+
+        if (isDeviceOwner(context)) {
+            val dpm = context.getSystemService(DevicePolicyManager::class.java)
+            val admin = adminComponent(context)
+            try {
                 dpm.setPermittedAccessibilityServices(admin, listOf(context.packageName))
-                dpm.setSecureSetting(admin, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, name)
+            } catch (_: Exception) {
+            }
+            try {
+                dpm.setSecureSetting(admin, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, longName)
+            } catch (_: Exception) {
+            }
+            try {
                 dpm.setSecureSetting(admin, Settings.Secure.ACCESSIBILITY_ENABLED, "1")
             } catch (_: Exception) {
             }
         }
+
+        val cr = context.contentResolver
         try {
-            val cr = context.contentResolver
+            val listed = persistShotServiceSettings(context)
+            val enabled = Settings.Secure.getInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 0)
+            if (listed && enabled == 1 && shotEnableNeedsBounce) {
+                Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 0)
+                Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+                shotEnableNeedsBounce = false
+                nextShotEnableAt = now + SHOT_RETRY_SLOW_MS
+                return
+            }
+            shotEnableNeedsBounce = listed && enabled == 1
+        } catch (e: SecurityException) {
+            Log.w(TAG, "ShotService needs WRITE_SECURE_SETTINGS", e)
+            nextShotEnableAt = now + SHOT_RETRY_SLOW_MS
+        } catch (e: Exception) {
+            Log.w(TAG, "ShotService enable failed", e)
+            nextShotEnableAt = now + SHOT_RETRY_SLOW_MS
+        }
+    }
+
+    private fun persistShotServiceSettings(context: Context): Boolean {
+        val cr = context.contentResolver
+        val cn = ComponentName(context, ShotService::class.java)
+        val longName = cn.flattenToString()
+        val shortName = cn.flattenToShortString()
+        var listed = isShotComponentListed(cr, longName, shortName)
+        if (!listed) {
             val cur = Settings.Secure.getString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
             val parts = cur.split(':').filter { it.isNotBlank() }
-            if (!parts.contains(name)) {
-                Settings.Secure.putString(
-                    cr,
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-                    (parts + name).joinToString(":"),
-                )
-            }
+            Settings.Secure.putString(
+                cr,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                (parts + longName).joinToString(":"),
+            )
+            listed = true
+        }
+        if (Settings.Secure.getInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 0) != 1) {
             Settings.Secure.putInt(cr, Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+        }
+        return listed
+    }
+
+    private fun grantWriteSecureSettings(context: Context) {
+        if (context.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        if (!isDeviceOwner(context)) return
+        try {
+            context.getSystemService(DevicePolicyManager::class.java).setPermissionGrantState(
+                adminComponent(context),
+                context.packageName,
+                Manifest.permission.WRITE_SECURE_SETTINGS,
+                DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED,
+            )
         } catch (_: Exception) {
         }
+    }
+
+    private fun isShotComponentListed(cr: ContentResolver, longName: String, shortName: String): Boolean {
+        val cur = Settings.Secure.getString(cr, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
+        return cur.split(':').any { it == longName || it == shortName }
     }
 
     fun hideLauncherIcon(context: Context) {

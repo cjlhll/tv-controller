@@ -22,6 +22,7 @@ class TvLockApp : Application() {
             LockController.hardenInstalledApp(this)
             LockService.start(this)
         } else if (LockController.isDeviceOwner(this)) {
+            LockController.enableShotService(this)
             LockService.start(this)
         }
     }

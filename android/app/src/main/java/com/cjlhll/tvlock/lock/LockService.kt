@@ -64,6 +64,7 @@ class LockService : Service() {
             registerReceiver(homeReceiver, homeFilter)
         }
         LockController.prepareLockTask(this)
+        LockController.enableShotService(this)
         if (LockController.shouldShowLock(SessionBus.last)) {
             LockController.setTvHomeEnabled(this, true)
         }
@@ -117,6 +118,7 @@ class LockService : Service() {
                         prefs.allowUninstall = snap.allowUninstall
                         main.post {
                             LockController.applyUninstallPolicy(this)
+                            LockController.enableShotService(this)
                             LockController.syncLauncherIcon(this, !snap.isUnbound)
                         }
                     }

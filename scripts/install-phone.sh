@@ -14,7 +14,13 @@ if [[ ! -f "$APK" ]]; then
 fi
 
 "$ADB" install -r "$APK"
-"$ADB" shell pm grant com.cjlhll.tvlock android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1 || true
+PKG=com.cjlhll.tvlock
+SHOT="$PKG/$PKG.lock.ShotService"
+if ! "$ADB" shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS; then
+  echo "警告：未能授予 WRITE_SECURE_SETTINGS，解锁后远程截图可能失败" >&2
+fi
+"$ADB" shell settings put secure enabled_accessibility_services "$SHOT" >/dev/null
+"$ADB" shell settings put secure accessibility_enabled 1 >/dev/null
 echo "已安装。服务器默认 https://armbian.caojian.shop:8787/api"
 echo "Device Owner（专用机、需先移除账号）："
 echo "  $ADB shell dpm set-device-owner com.cjlhll.tvlock/.lock.LockAdminReceiver"

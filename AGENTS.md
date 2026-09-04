@@ -176,6 +176,7 @@ curl -sS -X POST https://armbian.caojian.shop:8787/api \
 5. **不要把 Magisk / `su` / root 写进正式逻辑。** 索尼没有 root，测试机的 root 也不要用。截图对齐 atvTools：走系统合成器（无障碍 `takeScreenshot`），失败立刻回传原因，不要空转等到超时。
 6. **`LauncherAlias` 完成设置后关闭。** 桌面不再出现 TV Lock 图标。Device Owner 下只用 `setUninstallBlocked` 禁止卸载 **本应用**。**禁止** `DISALLOW_UNINSTALL_APPS`（会锁死整机所有应用卸载；索尼电视因此只能恢复出厂）。`TvHomeAlias` 仅电视锁定时打开。
 7. **卸载 Device Owner：** `adb.exe shell dpm remove-active-admin com.cjlhll.tvlock/.lock.LockAdminReceiver`。同包名重装会保留 Owner。
+8. **索尼解锁截图：** Device Owner 的 `setSecureSetting` 写不了无障碍开关。必须 `pm grant WRITE_SECURE_SETTINGS`（`scripts/install-phone.sh` 会做），应用开机再自己打开 `ShotService`。没授这个权时小程序会显示「截图服务未打开」。
 
 ---
 

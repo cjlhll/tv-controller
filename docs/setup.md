@@ -71,6 +71,14 @@ adb.exe shell dpm set-device-owner com.cjlhll.tvlock/.lock.LockAdminReceiver
 
 成功后锁屏会走 Lock Task，Home / 最近任务在锁定期间无效。解锁后 `stopLockTask`，其它应用可正常用。
 
+解锁后远程截图依赖无障碍 `ShotService`。索尼等机器上 Device Owner 不能直接写这个开关，装包脚本会授予 `WRITE_SECURE_SETTINGS` 并打开服务。若手装 APK，再执行：
+
+```text
+adb.exe shell pm grant com.cjlhll.tvlock android.permission.WRITE_SECURE_SETTINGS
+adb.exe shell settings put secure enabled_accessibility_services com.cjlhll.tvlock/com.cjlhll.tvlock.lock.ShotService
+adb.exe shell settings put secure accessibility_enabled 1
+```
+
 卸掉（避免变砖）：
 
 ```text
